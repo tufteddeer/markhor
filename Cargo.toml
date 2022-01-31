@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 tera = "1.15.0"
+pulldown-cmark = "0.9.1"
