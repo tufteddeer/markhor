@@ -1,11 +1,11 @@
-use std::error::Error;
+use rust_templating::{render_markdown, render_markdown_into_template, write_output};
 
-use rust_templating::render_markdown;
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let markdown_file = "markdown/test.md";
 
-fn main() -> Result<(), Box<dyn Error>> {
-    let markdown = "markdown/test.md";
+    let markdown_html = render_markdown(markdown_file)?;
 
-    let html = render_markdown(markdown)?;
-    println!("{}", html);
-    Ok(())
+    let result_html = render_markdown_into_template(markdown_html)?;
+
+    write_output("out", "hello.html".to_string(), result_html)
 }
