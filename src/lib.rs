@@ -1,4 +1,4 @@
-use log::info;
+use log::{error, info};
 use pulldown_cmark::{html, Parser};
 use std::ffi::OsString;
 use std::io::Write;
@@ -9,19 +9,32 @@ use std::{
     io,
 };
 use tera::{Context, Tera};
+#[macro_use]
+extern crate lazy_static;
+
+lazy_static! {
+    static ref TERA_TEMPLATE: Tera = {
+        info!("Creating Tera");
+        let mut tera = match Tera::new("templates/**/*.html") {
+            Ok(t) => t,
+            Err(e) => {
+                error!("Failed to create tera: {}", e);
+                std::process::exit(1);
+            }
+        };
+
+        tera.autoescape_on(vec![]);
+
+        tera
+    };
+}
 
 pub fn render_markdown_into_template(markdown: String) -> Result<String, tera::Error> {
-    let mut tera = Tera::new("templates/**/*.html")?;
-
     let mut context = Context::new();
 
     context.insert("markdown_content", &markdown);
 
-    let animals = vec!["cat", "dog", "horse"];
-    context.insert("animals", &animals);
-
-    tera.autoescape_on(vec![]);
-    tera.render("post.html", &context)
+    TERA_TEMPLATE.render("post.html", &context)
 }
 
 pub fn render_markdown(filepath: &Path) -> Result<String, Box<dyn Error>> {
