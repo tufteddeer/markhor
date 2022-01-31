@@ -1,9 +1,11 @@
 use std::error::Error;
 
-use rust_templating::render_template;
+use rust_templating::render_markdown;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let result = render_template()?;
-    println!("{}", result);
+    let markdown = "# title \n *strong*";
+
+    let html = render_markdown(markdown);
+    println!("{}", html);
     Ok(())
 }
