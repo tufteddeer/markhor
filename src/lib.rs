@@ -1,3 +1,4 @@
+use log::info;
 use pulldown_cmark::{html, Parser};
 use std::ffi::OsString;
 use std::io::Write;
@@ -42,7 +43,7 @@ pub fn write_output(
     if let Err(e) = fs::read_dir(out_dir) {
         match e.kind() {
             io::ErrorKind::NotFound => {
-                println!("dir does not exist");
+                info!("Creating output directory {:?}", out_dir);
                 fs::create_dir(out_dir)?;
             }
             _ => {
