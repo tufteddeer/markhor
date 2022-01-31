@@ -1,6 +1,7 @@
 use pulldown_cmark::{html, Parser};
+use std::ffi::OsString;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::{
     error::Error,
     fs::{self, File},
@@ -19,11 +20,11 @@ pub fn render_markdown_into_template(markdown: String) -> Result<String, tera::E
     context.insert("animals", &animals);
 
     tera.autoescape_on(vec![]);
-    tera.render("hello.html", &context)
+    tera.render("post.html", &context)
 }
 
-pub fn render_markdown(filename: &str) -> Result<String, Box<dyn Error>> {
-    let input = fs::read_to_string(filename)?;
+pub fn render_markdown(filepath: &Path) -> Result<String, Box<dyn Error>> {
+    let input = fs::read_to_string(filepath)?;
 
     let parser = Parser::new(&input);
 
@@ -34,8 +35,8 @@ pub fn render_markdown(filename: &str) -> Result<String, Box<dyn Error>> {
 }
 
 pub fn write_output(
-    out_dir: &str,
-    filename: String,
+    out_dir: &Path,
+    filename: OsString,
     content: String,
 ) -> Result<(), Box<dyn Error>> {
     if let Err(e) = fs::read_dir(out_dir) {
@@ -45,7 +46,7 @@ pub fn write_output(
                 fs::create_dir(out_dir)?;
             }
             _ => {
-                panic!("Failed to access output directory {}: {}", out_dir, e);
+                panic!("Failed to access output directory {:?}: {}", out_dir, e);
             }
         }
     };
