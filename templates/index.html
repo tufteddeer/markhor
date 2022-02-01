@@ -1,0 +1,11 @@
+<html>
+    <H1>Posts:</H1>
+    
+    <ul>
+
+    {% for item in post_toc %}
+        <li> <a href={{item.rendered_to}}> {{ item.source_file }} </a> </li>
+    {% endfor %}
+    </ul>
+
+</html>
