@@ -1,8 +1,7 @@
-<html>
-    <H1>My site</H1>
+{% extends "base.html" %}
 
+{% block content %}
     <article>
-    {{ markdown_content }}
+        {{ markdown_content }}
     </article>
-    <span>some footer</span>
-</html>
+{% endblock content %}
