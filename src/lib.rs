@@ -1,5 +1,7 @@
 use log::{error, info};
 use pulldown_cmark::{html, Parser};
+
+use serde::Serialize;
 use std::ffi::OsString;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -37,6 +39,20 @@ pub fn render_markdown_into_template(markdown: String) -> Result<String, tera::E
     TERA_TEMPLATE.render("post.html", &context)
 }
 
+#[derive(Debug, Serialize)]
+pub struct PostMeta {
+    pub source_file: String,
+    pub rendered_to: String,
+}
+
+pub fn render_index(posts_meta: &[PostMeta]) -> Result<String, tera::Error> {
+    let mut context = Context::new();
+
+    context.insert("post_toc", &posts_meta);
+
+    TERA_TEMPLATE.render("index.html", &context)
+}
+
 pub fn render_markdown(filepath: &Path) -> Result<String, Box<dyn Error>> {
     let input = fs::read_to_string(filepath)?;
 
@@ -48,9 +64,36 @@ pub fn render_markdown(filepath: &Path) -> Result<String, Box<dyn Error>> {
     Ok(html_out)
 }
 
+pub fn convert_posts(posts_dir: &Path, out_dir: &Path) -> Result<Vec<PostMeta>, Box<dyn Error>> {
+    let mut post_metadata = Vec::<PostMeta>::new();
+
+    info!("Using markdown files in {:?}", posts_dir);
+    for entry in fs::read_dir(posts_dir)? {
+        let name = entry?.file_name();
+        let filepath = posts_dir.join(&name);
+
+        let mut out_name = name.to_owned();
+        out_name.push(".html");
+
+        info!("Rendering {:?} to {:?}", name, out_name);
+        let markdown_html = render_markdown(filepath.as_path())?;
+
+        let result_html = render_markdown_into_template(markdown_html)?;
+
+        write_output(out_dir, &out_name, result_html)?;
+
+        post_metadata.push(PostMeta {
+            source_file: name.into_string().unwrap(),
+            rendered_to: out_name.into_string().unwrap(),
+        })
+    }
+
+    Ok(post_metadata)
+}
+
 pub fn write_output(
     out_dir: &Path,
-    filename: OsString,
+    filename: &OsString,
     content: String,
 ) -> Result<(), Box<dyn Error>> {
     if let Err(e) = fs::read_dir(out_dir) {
