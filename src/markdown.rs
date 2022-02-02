@@ -9,9 +9,20 @@ use tera::Tera;
 use crate::templating::render_markdown_into_template;
 use crate::{write_output, PostHeader, PostMeta};
 
-const MARKDOWN_HEADER_DELIMITER: &str = "---\n";
+pub const MARKDOWN_HEADER_DELIMITER: &str = "---\n";
 
-pub fn render_markdown(markdown: &str) -> String {
+/// Convert markdown to html
+///
+/// # Examples
+/// ```
+/// use rust_templating::markdown::convert_markdown;
+///
+/// let md = "# Heading";
+/// let html = convert_markdown(md);
+///
+/// assert_eq!(html, "<h1>Heading</h1>\n")
+/// ```
+pub fn convert_markdown(markdown: &str) -> String {
     let parser = Parser::new(markdown);
 
     let mut html_out = String::new();
@@ -20,7 +31,8 @@ pub fn render_markdown(markdown: &str) -> String {
     html_out
 }
 
-/// Parse an optional [PostHeader] located at the start of a markdown document (beginning and ending with [MARKDOWN_META_DELIMITER] )
+/// Parse an optional [PostHeader] located at the start of a markdown document
+/// (beginning and ending with [MARKDOWN_HEADER_DELIMITER] )
 ///
 /// # Examples
 ///
@@ -62,6 +74,9 @@ pub fn split_md_and_header(input: &str) -> Result<(Option<PostHeader>, &str), to
     }
 }
 
+/// Convert every file in `posts_dir` to html and renders it into the `post.html` template
+///
+/// Returns a `Vec` of [PostMeta] info about converted posts
 pub fn convert_posts(
     tera: &Tera,
     posts_dir: impl AsRef<Path>,
@@ -85,7 +100,7 @@ pub fn convert_posts(
 
         let (header, markdown) = split_md_and_header(&source)?;
 
-        let markdown_html = render_markdown(markdown);
+        let markdown_html = convert_markdown(markdown);
 
         let result_html = render_markdown_into_template(tera, &header, markdown_html)?;
 

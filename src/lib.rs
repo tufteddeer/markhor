@@ -14,16 +14,21 @@ use toml::value::Datetime;
 pub mod markdown;
 pub mod templating;
 
+/// PostHeader represents metadata added at the start of a markdown post.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PostHeader {
     pub title: Option<String>,
     pub date: Option<Datetime>,
 }
 
+/// PostMeta contains post metadata originated from the build process and the optional [PostHeader]
 #[derive(Debug, Serialize)]
 pub struct PostMeta {
+    /// the markdown file used as content source
     pub source_file: String,
+    /// name of the rendered html file
     pub rendered_to: String,
+    /// an optional [PostHeader] contained within the source file
     pub header: Option<PostHeader>,
 }
 
