@@ -12,29 +12,26 @@ use std::{
 };
 use tera::{Context, Tera};
 use toml::value::Datetime;
-#[macro_use]
-extern crate lazy_static;
 
 const MARKDOWN_HEADER_DELIMITER: &str = "---\n";
 
-lazy_static! {
-    static ref TERA_TEMPLATE: Tera = {
-        info!("Creating Tera");
-        let mut tera = match Tera::new("templates/**/*.html") {
-            Ok(t) => t,
-            Err(e) => {
-                error!("Failed to create tera: {}", e);
-                std::process::exit(1);
-            }
-        };
-
-        tera.autoescape_on(vec![]);
-
-        tera
+pub fn init_tera(template_dir: &str) -> Tera {
+    info!("Creating Tera");
+    let mut tera = match Tera::new(template_dir) {
+        Ok(t) => t,
+        Err(e) => {
+            error!("Failed to create tera: {}", e);
+            std::process::exit(1);
+        }
     };
+
+    tera.autoescape_on(vec![]);
+
+    tera
 }
 
 pub fn render_markdown_into_template(
+    tera: &Tera,
     header: &Option<PostHeader>,
     markdown: String,
 ) -> Result<String, tera::Error> {
@@ -43,7 +40,7 @@ pub fn render_markdown_into_template(
     context.insert("markdown_content", &markdown);
     context.insert("header", &header);
 
-    TERA_TEMPLATE.render("post.html", &context)
+    tera.render("post.html", &context)
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -59,12 +56,12 @@ pub struct PostMeta {
     pub header: Option<PostHeader>,
 }
 
-pub fn render_index(posts_meta: &[PostMeta]) -> Result<String, tera::Error> {
+pub fn render_index(tera: &Tera, posts_meta: &[PostMeta]) -> Result<String, tera::Error> {
     let mut context = Context::new();
 
     context.insert("post_toc", &posts_meta);
 
-    TERA_TEMPLATE.render("index.html", &context)
+    tera.render("index.html", &context)
 }
 
 pub fn render_markdown(markdown: &str) -> String {
@@ -119,6 +116,7 @@ pub fn split_md_and_header(input: &str) -> Result<(Option<PostHeader>, &str), to
 }
 
 pub fn convert_posts(
+    tera: &Tera,
     posts_dir: impl AsRef<Path>,
     out_dir: impl AsRef<Path>,
 ) -> Result<Vec<PostMeta>, Box<dyn Error>> {
@@ -142,7 +140,7 @@ pub fn convert_posts(
 
         let markdown_html = render_markdown(markdown);
 
-        let result_html = render_markdown_into_template(&header, markdown_html)?;
+        let result_html = render_markdown_into_template(tera, &header, markdown_html)?;
 
         let meta = PostMeta {
             source_file: name.into_string().unwrap(),

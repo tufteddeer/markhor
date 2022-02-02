@@ -1,6 +1,6 @@
 use std::{ops::Sub, path::Path, time::Instant};
 
-use rust_templating::{convert_posts, render_index, write_output};
+use rust_templating::{convert_posts, init_tera, render_index, write_output};
 use simple_logger::SimpleLogger;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -13,9 +13,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let start_time = Instant::now();
 
-    let post_metadata = convert_posts(posts_dir, output_dir)?;
+    let tera = init_tera("templates/**/*.html");
 
-    let index_html = render_index(&post_metadata)?;
+    let post_metadata = convert_posts(&tera, posts_dir, output_dir)?;
+
+    let index_html = render_index(&tera, &post_metadata)?;
 
     write_output(output_dir, "index.html", index_html)?;
 
