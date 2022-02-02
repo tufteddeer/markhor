@@ -1,8 +1,8 @@
 use log::{error, info};
 use pulldown_cmark::{html, Parser};
 
-use serde::Serialize;
-use std::ffi::OsString;
+use serde::{Deserialize, Serialize};
+
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::{
@@ -11,8 +11,11 @@ use std::{
     io,
 };
 use tera::{Context, Tera};
+use toml::value::Datetime;
 #[macro_use]
 extern crate lazy_static;
+
+const MARKDOWN_HEADER_DELIMITER: &str = "---\n";
 
 lazy_static! {
     static ref TERA_TEMPLATE: Tera = {
@@ -39,10 +42,17 @@ pub fn render_markdown_into_template(markdown: String) -> Result<String, tera::E
     TERA_TEMPLATE.render("post.html", &context)
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PostHeader {
+    pub title: Option<String>,
+    pub date: Option<Datetime>,
+}
+
 #[derive(Debug, Serialize)]
 pub struct PostMeta {
     pub source_file: String,
     pub rendered_to: String,
+    pub header: Option<PostHeader>,
 }
 
 pub fn render_index(posts_meta: &[PostMeta]) -> Result<String, tera::Error> {
@@ -53,15 +63,60 @@ pub fn render_index(posts_meta: &[PostMeta]) -> Result<String, tera::Error> {
     TERA_TEMPLATE.render("index.html", &context)
 }
 
-pub fn render_markdown(filepath: &Path) -> Result<String, Box<dyn Error>> {
-    let input = fs::read_to_string(filepath)?;
-
-    let parser = Parser::new(&input);
+pub fn render_markdown(markdown: &str) -> String {
+    let parser = Parser::new(markdown);
 
     let mut html_out = String::new();
     html::push_html(&mut html_out, parser);
 
-    Ok(html_out)
+    html_out
+}
+
+/// Parse an optional [PostHeader] located at the start of a markdown document (beginning and ending with [MARKDOWN_META_DELIMITER] )
+///
+/// # Examples
+///
+/// ```
+/// use rust_templating::split_md_and_header;
+/// use std::str::FromStr;
+/// use toml::value::Datetime;
+/// let input = r#"---
+/// title = "mytitle"
+/// ---
+/// *bold*"#.to_string();
+///
+///
+/// let (header, content) = split_md_and_header(&input).unwrap();
+///
+/// assert!(header.is_some());
+/// let header = header.unwrap();
+///
+/// assert_eq!(header.title.unwrap(), "mytitle".to_string());
+/// assert_eq!(content, "*bold*")
+/// ```
+pub fn split_md_and_header(input: &str) -> Result<(Option<PostHeader>, &str), toml::de::Error> {
+    if !input.starts_with(MARKDOWN_HEADER_DELIMITER) {
+        return Ok((None, input));
+    }
+
+    let parts: Vec<&str> = input.splitn(3, MARKDOWN_HEADER_DELIMITER).collect();
+
+    let header = parts[1];
+    let content = parts[2];
+
+    println!("parts: {}", parts.len());
+    println!("header: {}", header);
+    println!("content: {}", content);
+
+    if header == content {
+        println!("{:?} has no meta information", "filepath");
+        Ok((None, content))
+    } else {
+        println!("parsing {}", header);
+        let header: PostHeader = toml::from_str(header)?;
+        println!("{:?}", header);
+        Ok((Some(header), content))
+    }
 }
 
 pub fn convert_posts(posts_dir: &Path, out_dir: &Path) -> Result<Vec<PostMeta>, Box<dyn Error>> {
@@ -76,16 +131,24 @@ pub fn convert_posts(posts_dir: &Path, out_dir: &Path) -> Result<Vec<PostMeta>, 
         out_name.push(".html");
 
         info!("Rendering {:?} to {:?}", name, out_name);
-        let markdown_html = render_markdown(filepath.as_path())?;
+
+        let source = fs::read_to_string(filepath)?;
+
+        let (header, markdown) = split_md_and_header(&source)?;
+
+        let meta = PostMeta {
+            source_file: name.into_string().unwrap(),
+            rendered_to: out_name.into_string().unwrap(),
+            header,
+        };
+
+        let markdown_html = render_markdown(markdown);
 
         let result_html = render_markdown_into_template(markdown_html)?;
 
-        write_output(out_dir, &out_name, result_html)?;
+        write_output(out_dir, &meta.rendered_to, result_html)?;
 
-        post_metadata.push(PostMeta {
-            source_file: name.into_string().unwrap(),
-            rendered_to: out_name.into_string().unwrap(),
-        })
+        post_metadata.push(meta);
     }
 
     Ok(post_metadata)
@@ -93,7 +156,7 @@ pub fn convert_posts(posts_dir: &Path, out_dir: &Path) -> Result<Vec<PostMeta>, 
 
 pub fn write_output(
     out_dir: &Path,
-    filename: &OsString,
+    filename: impl AsRef<Path>,
     content: String,
 ) -> Result<(), Box<dyn Error>> {
     if let Err(e) = fs::read_dir(out_dir) {
@@ -115,4 +178,48 @@ pub fn write_output(
     write!(file, "{}", content)?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::split_md_and_header;
+    use std::str::FromStr;
+    use toml::value::Datetime;
+
+    #[test]
+    fn test_split_md_and_header_should_read_meta() {
+        let input = r#"---
+title = "mytitle"
+date = 2022-02-01
+---
+# heading"#
+            .to_string();
+
+        let (header, content) = split_md_and_header(&input).unwrap();
+
+        assert!(header.is_some());
+
+        let header = header.unwrap();
+
+        assert_eq!(header.title.unwrap(), "mytitle".to_string());
+        assert_eq!(
+            header.date.unwrap(),
+            Datetime::from_str("2022-02-01").unwrap()
+        );
+
+        assert_eq!(content, "# heading")
+    }
+
+    #[test]
+    fn test_split_md_and_header_should_handle_no_meta() {
+        let input = r"# heading".to_string();
+
+        println!("{}", input);
+
+        let (header, content) = split_md_and_header(&input).unwrap();
+
+        assert!(header.is_none());
+
+        assert_eq!(content, "# heading")
+    }
 }
