@@ -1,4 +1,4 @@
-use std::{ffi::OsString, ops::Sub, path::Path, time::Instant};
+use std::{ops::Sub, path::Path, time::Instant};
 
 use rust_templating::{convert_posts, render_index, write_output};
 use simple_logger::SimpleLogger;
@@ -17,7 +17,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let index_html = render_index(&post_metadata)?;
 
-    write_output(output_dir, &OsString::from("index.html"), index_html)?;
+    write_output(output_dir, "index.html", index_html)?;
 
     let elapsed_time = Instant::now().sub(start_time);
     log::info!("Took {}ms", &elapsed_time.as_millis());
