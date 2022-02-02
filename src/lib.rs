@@ -120,13 +120,18 @@ pub fn split_md_and_header(input: &str) -> Result<(Option<PostHeader>, &str), to
     }
 }
 
-pub fn convert_posts(posts_dir: &Path, out_dir: &Path) -> Result<Vec<PostMeta>, Box<dyn Error>> {
+pub fn convert_posts(
+    posts_dir: impl AsRef<Path>,
+    out_dir: impl AsRef<Path>,
+) -> Result<Vec<PostMeta>, Box<dyn Error>> {
+    let posts_dir = posts_dir.as_ref();
     let mut post_metadata = Vec::<PostMeta>::new();
 
     info!("Using markdown files in {:?}", posts_dir);
     for entry in fs::read_dir(posts_dir)? {
         let name = entry?.file_name();
-        let filepath = posts_dir.join(&name);
+        let mut filepath = PathBuf::from(posts_dir);
+        filepath.push(&name);
 
         let mut out_name = name.to_owned();
         out_name.push(".html");
@@ -147,7 +152,7 @@ pub fn convert_posts(posts_dir: &Path, out_dir: &Path) -> Result<Vec<PostMeta>, 
 
         let result_html = render_markdown_into_template(markdown_html)?;
 
-        write_output(out_dir, &meta.rendered_to, result_html)?;
+        write_output(&out_dir, &meta.rendered_to, result_html)?;
 
         post_metadata.push(meta);
     }
@@ -156,18 +161,25 @@ pub fn convert_posts(posts_dir: &Path, out_dir: &Path) -> Result<Vec<PostMeta>, 
 }
 
 pub fn write_output(
-    out_dir: &Path,
+    out_dir: impl AsRef<Path>,
     filename: impl AsRef<Path>,
     content: String,
 ) -> Result<(), Box<dyn Error>> {
+    let out_dir = out_dir.as_ref();
+    let filename = filename.as_ref();
+
     if let Err(e) = fs::read_dir(out_dir) {
         match e.kind() {
             io::ErrorKind::NotFound => {
-                info!("Creating output directory {:?}", out_dir);
+                info!("Creating output directory {}", out_dir.display());
                 fs::create_dir(out_dir)?;
             }
             _ => {
-                panic!("Failed to access output directory {:?}: {}", out_dir, e);
+                panic!(
+                    "Failed to access output directory {}: {}",
+                    out_dir.display(),
+                    e
+                );
             }
         }
     };
