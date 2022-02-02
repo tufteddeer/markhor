@@ -106,16 +106,10 @@ pub fn split_md_and_header(input: &str) -> Result<(Option<PostHeader>, &str), to
     let header = parts.next().unwrap();
     let content = parts.next().unwrap_or(header);
 
-    println!("header: {}", header);
-    println!("content: {}", content);
-
     if header == content {
-        println!("{:?} has no meta information", "filepath");
         Ok((None, content))
     } else {
-        println!("parsing {}", header);
         let header: PostHeader = toml::from_str(header)?;
-        println!("{:?}", header);
         Ok((Some(header), content))
     }
 }
@@ -226,8 +220,6 @@ date = 2022-02-01
     #[test]
     fn test_split_md_and_header_should_handle_no_meta() {
         let input = r"# heading".to_string();
-
-        println!("{}", input);
 
         let (header, content) = split_md_and_header(&input).unwrap();
 
