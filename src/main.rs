@@ -1,5 +1,7 @@
 use std::{ops::Sub, path::Path, time::Instant};
 
+use fs_extra::{copy_items, dir};
+use log::info;
 use rust_templating::{
     markdown::convert_posts,
     templating::{self, render_index},
@@ -27,6 +29,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let elapsed_time = Instant::now().sub(start_time);
     log::info!("Took {}ms", &elapsed_time.as_millis());
+
+    info!("Copying static assets");
+
+    let options = dir::CopyOptions::new();
+    let from = vec!["static"];
+    copy_items(&from, "out", &options)?;
 
     Ok(())
 }
