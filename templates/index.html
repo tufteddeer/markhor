@@ -5,7 +5,16 @@
         
     <ul>
         {% for item in post_toc %}
-            <li> <a href={{item.rendered_to}}> {{ item.source_file }} </a> </li>
+            <li>
+                <a href={{item.rendered_to}}>
+
+                    {% if item.header.title is defined %}
+                        {{ item.header.title}}
+                    {% else %}
+                        {{ item.source_file }}
+                    {% endif %}
+                </a>
+            </li>
         {% endfor %}
     </ul>
 {% endblock content %}
