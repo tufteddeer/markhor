@@ -99,12 +99,13 @@ pub fn split_md_and_header(input: &str) -> Result<(Option<PostHeader>, &str), to
         return Ok((None, input));
     }
 
-    let parts: Vec<&str> = input.splitn(3, MARKDOWN_HEADER_DELIMITER).collect();
+    let mut parts = input.splitn(3, MARKDOWN_HEADER_DELIMITER);
 
-    let header = parts[1];
-    let content = parts[2];
+    parts.next();
 
-    println!("parts: {}", parts.len());
+    let header = parts.next().unwrap();
+    let content = parts.next().unwrap_or(header);
+
     println!("header: {}", header);
     println!("content: {}", content);
 
