@@ -34,10 +34,14 @@ lazy_static! {
     };
 }
 
-pub fn render_markdown_into_template(markdown: String) -> Result<String, tera::Error> {
+pub fn render_markdown_into_template(
+    header: &Option<PostHeader>,
+    markdown: String,
+) -> Result<String, tera::Error> {
     let mut context = Context::new();
 
     context.insert("markdown_content", &markdown);
+    context.insert("header", &header);
 
     TERA_TEMPLATE.render("post.html", &context)
 }
@@ -136,15 +140,15 @@ pub fn convert_posts(
 
         let (header, markdown) = split_md_and_header(&source)?;
 
+        let markdown_html = render_markdown(markdown);
+
+        let result_html = render_markdown_into_template(&header, markdown_html)?;
+
         let meta = PostMeta {
             source_file: name.into_string().unwrap(),
             rendered_to: out_name.into_string().unwrap(),
             header,
         };
-
-        let markdown_html = render_markdown(markdown);
-
-        let result_html = render_markdown_into_template(markdown_html)?;
 
         write_output(&out_dir, &meta.rendered_to, result_html)?;
 
