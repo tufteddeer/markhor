@@ -16,7 +16,7 @@ pub const MARKDOWN_HEADER_DELIMITER: &str = "---\n";
 ///
 /// # Examples
 /// ```
-/// use rust_templating::markdown::convert_markdown;
+/// use yanos::markdown::convert_markdown;
 ///
 /// let md = "# Heading";
 /// let html = convert_markdown(md);
@@ -38,7 +38,7 @@ pub fn convert_markdown(markdown: &str) -> String {
 /// # Examples
 ///
 /// ```
-/// use rust_templating::markdown::split_md_and_header;
+/// use yanos::markdown::split_md_and_header;
 /// use std::str::FromStr;
 /// use toml::value::Datetime;
 /// let input = r#"---
