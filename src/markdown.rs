@@ -3,6 +3,7 @@ use pulldown_cmark::{html, Parser};
 
 use std::error::Error;
 use std::fs;
+use std::ops::Add;
 use std::path::{Path, PathBuf};
 use tera::Tera;
 
@@ -91,8 +92,11 @@ pub fn convert_posts(
         let mut filepath = PathBuf::from(posts_dir);
         filepath.push(&name);
 
-        let mut out_name = name.to_owned();
-        out_name.push(".html");
+        let out_name = match Path::new(&name).file_stem() {
+            Some(s) => s.to_os_string().to_string_lossy().to_string(),
+            None => name.to_string_lossy().to_string(),
+        };
+        let out_name = out_name.add(".html");
 
         info!("Rendering {:?} to {:?}", name, out_name);
 
@@ -106,7 +110,7 @@ pub fn convert_posts(
 
         let meta = PostMeta {
             source_file: name.into_string().unwrap(),
-            rendered_to: out_name.into_string().unwrap(),
+            rendered_to: out_name,
             header,
         };
 
