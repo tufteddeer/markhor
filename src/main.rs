@@ -2,13 +2,13 @@ use std::{ops::Sub, path::Path, time::Instant};
 
 use fs_extra::{copy_items, dir};
 use log::info;
-use rust_templating::{
+use simple_logger::SimpleLogger;
+use yanos::{
     compare_header_date, compare_option,
     markdown::convert_posts,
     templating::{self, render_index},
     write_output,
 };
-use simple_logger::SimpleLogger;
 
 const POSTS_DIR: &str = "posts";
 const OUT_DIR: &str = "out";

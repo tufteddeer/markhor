@@ -527,20 +527,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f497285884f3fcff424ffc933e56d7cbca511def0c9831a7f9b5f6153e3cc89b"
 
 [[package]]
-name = "rust-templating"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "fs_extra",
- "log",
- "pulldown-cmark",
- "serde",
- "simple_logger",
- "tera",
- "toml",
-]
-
-[[package]]
 name = "ryu"
 version = "1.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -850,3 +836,17 @@ name = "winapi-x86_64-pc-windows-gnu"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
+
+[[package]]
+name = "yanos"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "fs_extra",
+ "log",
+ "pulldown-cmark",
+ "serde",
+ "simple_logger",
+ "tera",
+ "toml",
+]

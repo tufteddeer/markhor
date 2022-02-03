@@ -26,9 +26,9 @@ pub struct PostHeader {
 /// # Examples
 ///
 /// ```
-/// use rust_templating::PostHeader;
+/// use yanos::PostHeader;
 /// use std::cmp::Ordering::{self, Equal, Less, Greater};
-/// use rust_templating::compare_header_date;
+/// use yanos::compare_header_date;
 ///
 /// let a = PostHeader {title: None, date: Some("1900-01-01".to_string())};
 /// let b = PostHeader {title: None, date: Some("2022-01-01".to_string())};
@@ -110,7 +110,7 @@ pub fn write_output(
 /// use core::cmp::Ordering::Less;
 /// use std::cmp::Ordering::Greater;
 /// use std::cmp::Ordering::Equal;
-/// use rust_templating::compare_option;
+/// use yanos::compare_option;
 ///
 /// let some_high = Some(100);
 /// let some_low = Some(1);
