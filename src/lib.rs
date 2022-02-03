@@ -9,7 +9,6 @@ use std::{
     fs::{self, File},
     io,
 };
-use toml::value::Datetime;
 
 pub mod markdown;
 pub mod templating;
@@ -18,7 +17,7 @@ pub mod templating;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PostHeader {
     pub title: Option<String>,
-    pub date: Option<Datetime>,
+    pub date: Option<String>,
 }
 
 /// PostMeta contains post metadata originated from the build process and the optional [PostHeader]

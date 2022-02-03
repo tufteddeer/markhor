@@ -124,8 +124,6 @@ pub fn convert_posts(
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-    use toml::value::Datetime;
 
     use crate::markdown::split_md_and_header;
 
@@ -133,7 +131,7 @@ mod tests {
     fn test_split_md_and_header_should_read_meta() {
         let input = r#"---
 title = "mytitle"
-date = 2022-02-01
+date = "2022-02-01"
 ---
 # heading"#
             .to_string();
@@ -145,10 +143,7 @@ date = 2022-02-01
         let header = header.unwrap();
 
         assert_eq!(header.title.unwrap(), "mytitle".to_string());
-        assert_eq!(
-            header.date.unwrap(),
-            Datetime::from_str("2022-02-01").unwrap()
-        );
+        assert_eq!(header.date.unwrap(), "2022-02-01".to_string());
 
         assert_eq!(content, "# heading")
     }

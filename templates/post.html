@@ -7,6 +7,11 @@
 {% endblock title %}
 
 {% block content %}
+
+{% if header.date is defined %}
+    {{ header.date | date(format="%d.%m.%Y")}}
+{% endif %}
+
     <article>
         {{ markdown_content }}
     </article>
