@@ -10,17 +10,22 @@ use rust_templating::{
 };
 use simple_logger::SimpleLogger;
 
+const POSTS_DIR: &str = "posts";
+const OUT_DIR: &str = "out";
+const STATIC_DIR: &str = "static";
+const TEMPLATES_GLOB: &str = "templates/**/*";
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     SimpleLogger::new()
         .with_module_level("globset", log::LevelFilter::Error)
         .init()?;
 
-    let posts_dir = Path::new("markdown");
-    let output_dir = Path::new("out");
+    let posts_dir = Path::new(POSTS_DIR);
+    let output_dir = Path::new(OUT_DIR);
 
     let start_time = Instant::now();
 
-    let tera = templating::init_tera("templates/**/*.html");
+    let tera = templating::init_tera(TEMPLATES_GLOB);
 
     let mut post_metadata = convert_posts(&tera, posts_dir, output_dir)?;
 
@@ -40,8 +45,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Copying static assets");
 
     let options = dir::CopyOptions::new();
-    let from = vec!["static"];
-    copy_items(&from, "out", &options)?;
+    let from = vec![STATIC_DIR];
+    copy_items(&from, output_dir, &options)?;
 
     Ok(())
 }
