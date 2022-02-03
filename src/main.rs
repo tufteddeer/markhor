@@ -1,4 +1,4 @@
-use std::{ops::Sub, path::Path, time::Instant};
+use std::{fs, io, ops::Sub, path::Path, time::Instant};
 
 use fs_extra::{copy_items, dir};
 use log::info;
@@ -42,11 +42,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let elapsed_time = Instant::now().sub(start_time);
     log::info!("Took {}ms", &elapsed_time.as_millis());
 
-    info!("Copying static assets");
+    if let Err(e) = fs::read_dir(STATIC_DIR) {
+        match e.kind() {
+            io::ErrorKind::NotFound => {
+                info!("No static directory found, skipping");
+            }
+            _ => {
+                panic!("Failed to access static directory {}: {}", STATIC_DIR, e);
+            }
+        }
+    } else {
+        info!("Copying static assets");
 
-    let options = dir::CopyOptions::new();
-    let from = vec![STATIC_DIR];
-    copy_items(&from, output_dir, &options)?;
+        let options = dir::CopyOptions::new();
+        let from = vec![STATIC_DIR];
+        copy_items(&from, output_dir, &options)?;
+    }
 
     Ok(())
 }
