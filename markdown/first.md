@@ -1,6 +1,6 @@
 ---
 title = "This is my first post"
-date = 2022-02-01
+date = "2022-02-01"
 ---
 # My first post
 
