@@ -3,6 +3,7 @@ use std::{ops::Sub, path::Path, time::Instant};
 use fs_extra::{copy_items, dir};
 use log::info;
 use rust_templating::{
+    compare_header_date, compare_option,
     markdown::convert_posts,
     templating::{self, render_index},
     write_output,
@@ -21,7 +22,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let tera = templating::init_tera("templates/**/*.html");
 
-    let post_metadata = convert_posts(&tera, posts_dir, output_dir)?;
+    let mut post_metadata = convert_posts(&tera, posts_dir, output_dir)?;
+
+    post_metadata.sort_unstable_by(|a, b| {
+        compare_option(&b.header, &a.header, |meta_a, meta_b| {
+            compare_header_date(meta_a, meta_b)
+        })
+    });
 
     let index_html = render_index(&tera, &post_metadata)?;
 
