@@ -11,6 +11,12 @@ My site
             <li>
                 <a href={{item.rendered_to}}>
 
+                    {% if item.header.date is defined %}
+                        {{ item.header.date}}
+                    {% else %}
+                        [no date]
+                    {% endif %}
+
                     {% if item.header.title is defined %}
                         {{ item.header.title}}
                     {% else %}
