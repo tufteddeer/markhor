@@ -54,7 +54,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         info!("Copying static assets");
 
-        let options = dir::CopyOptions::new();
+        let mut options = dir::CopyOptions::new();
+        options.overwrite = true;
+
         let from = vec![STATIC_DIR];
         copy_items(&from, output_dir, &options)?;
     }
