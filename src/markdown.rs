@@ -5,10 +5,8 @@ use std::error::Error;
 use std::fs;
 use std::ops::Add;
 use std::path::{Path, PathBuf};
-use tera::Tera;
 
-use crate::templating::render_markdown_into_template;
-use crate::{write_output, PostHeader, PostMeta};
+use crate::{PostHeader, PostMeta};
 
 pub const MARKDOWN_HEADER_DELIMITER: &str = "---\n";
 
@@ -75,16 +73,15 @@ pub fn split_md_and_header(input: &str) -> Result<(Option<PostHeader>, &str), to
     }
 }
 
-/// Convert every file in `posts_dir` to html and renders it into the `post.html` template
+/// Convert every file in `posts_dir` to html, generates meta info and returns the html representation
 ///
 /// Returns a `Vec` of [PostMeta] info about converted posts
 pub fn convert_posts(
-    tera: &Tera,
     posts_dir: impl AsRef<Path>,
-    out_dir: impl AsRef<Path>,
-) -> Result<Vec<PostMeta>, Box<dyn Error>> {
+) -> Result<(Vec<PostMeta>, Vec<String>), Box<dyn Error>> {
     let posts_dir = posts_dir.as_ref();
     let mut post_metadata = Vec::<PostMeta>::new();
+    let mut post_content = Vec::<String>::new();
 
     info!("Using markdown files in {:?}", posts_dir);
     for entry in fs::read_dir(posts_dir)? {
@@ -106,20 +103,18 @@ pub fn convert_posts(
 
         let markdown_html = convert_markdown(markdown);
 
-        let result_html = render_markdown_into_template(tera, &header, markdown_html)?;
-
         let meta = PostMeta {
             source_file: name.into_string().unwrap(),
             rendered_to: out_name,
             header,
         };
 
-        write_output(&out_dir, &meta.rendered_to, result_html)?;
+        post_content.push(markdown_html);
 
         post_metadata.push(meta);
     }
 
-    Ok(post_metadata)
+    Ok((post_metadata, post_content))
 }
 
 #[cfg(test)]
