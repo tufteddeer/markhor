@@ -6,14 +6,15 @@ use simple_logger::SimpleLogger;
 use yanos::{
     compare_header_date, compare_option,
     markdown::convert_posts,
-    templating::{self, render_index},
-    write_output,
+    templating::{self, render_index, render_markdown_into_template},
+    write_output, PostMeta,
 };
 
 const POSTS_DIR: &str = "posts";
 const OUT_DIR: &str = "out";
 const STATIC_DIR: &str = "static";
 const TEMPLATES_GLOB: &str = "templates/**/*";
+const NUM_LATEST_POSTS: usize = 10;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     SimpleLogger::new()
@@ -27,15 +28,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let tera = templating::init_tera(TEMPLATES_GLOB);
 
-    let mut post_metadata = convert_posts(&tera, posts_dir, output_dir)?;
+    let (mut meta, posts) = convert_posts(posts_dir)?;
 
-    post_metadata.sort_unstable_by(|a, b| {
+    let mut latest = meta.clone();
+    latest.sort_unstable_by(|a, b| {
+        compare_option(&b.header, &a.header, |meta_a, meta_b| {
+            compare_header_date(meta_a, meta_b)
+        })
+    });
+    let latest: Vec<&PostMeta> = latest.iter().take(NUM_LATEST_POSTS).collect();
+
+    for i in 0..posts.len() {
+        let m = &meta[i];
+        let p = &posts[i];
+        let result_html = render_markdown_into_template(&tera, &m.header, p, &latest)?;
+        write_output(output_dir, &m.rendered_to, result_html)?;
+    }
+
+    meta.sort_unstable_by(|a, b| {
         compare_option(&b.header, &a.header, |meta_a, meta_b| {
             compare_header_date(meta_a, meta_b)
         })
     });
 
-    let index_html = render_index(&tera, &post_metadata)?;
+    let index_html = render_index(&tera, &meta)?;
 
     write_output(output_dir, "index.html", index_html)?;
 

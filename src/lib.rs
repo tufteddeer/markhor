@@ -16,7 +16,7 @@ pub mod markdown;
 pub mod templating;
 
 /// PostHeader represents metadata added at the start of a markdown post.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
 pub struct PostHeader {
     pub title: Option<String>,
     pub date: Option<String>,
@@ -56,7 +56,7 @@ pub fn compare_header_date(a: &PostHeader, b: &PostHeader) -> Ordering {
 }
 
 /// PostMeta contains post metadata originated from the build process and the optional [PostHeader]
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, PartialEq, Eq, Hash, Clone)]
 pub struct PostMeta {
     /// the markdown file used as content source
     pub source_file: String,
