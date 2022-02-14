@@ -66,6 +66,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
+    context.remove("post_content");
+    context.remove("header");
     let index_html = render_index(&tera, &mut context)?;
 
     write_output(output_dir, "index.html", index_html)?;
