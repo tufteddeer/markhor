@@ -19,17 +19,14 @@ pub fn init_tera(template_dir: &str) -> Tera {
 }
 pub fn render_markdown_into_template(
     tera: &Tera,
+    context: &mut Context,
     header: &Option<PostHeader>,
     markdown: &str,
-    latest: &[&PostMeta],
 ) -> Result<String, tera::Error> {
-    let mut context = Context::new();
-
     context.insert("markdown_content", &markdown);
     context.insert("header", &header);
-    context.insert("latest_posts", &latest);
 
-    tera.render("post.html", &context)
+    tera.render("post.html", context)
 }
 
 pub fn render_index(tera: &Tera, posts_meta: &[PostMeta]) -> Result<String, tera::Error> {
