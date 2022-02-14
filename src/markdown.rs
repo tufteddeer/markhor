@@ -95,7 +95,7 @@ pub fn convert_posts(
         };
         let out_name = out_name.add(".html");
 
-        info!("Rendering {:?} to {:?}", name, out_name);
+        info!("Setting out_name for {:?} to {:?}", name, out_name);
 
         let source = fs::read_to_string(filepath)?;
 
