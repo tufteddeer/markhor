@@ -3,6 +3,7 @@ use std::{fs, io, ops::Sub, path::Path, time::Instant};
 use fs_extra::{copy_items, dir};
 use log::info;
 use simple_logger::SimpleLogger;
+use tera::Context;
 use yanos::{
     compare_header_date, compare_option,
     markdown::convert_posts,
@@ -38,10 +39,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
     let latest: Vec<&PostMeta> = latest.iter().take(NUM_LATEST_POSTS).collect();
 
+    let mut context = Context::new();
+    context.insert("latest_posts", &latest);
+
     for i in 0..posts.len() {
         let m = &meta[i];
         let p = &posts[i];
-        let result_html = render_markdown_into_template(&tera, &m.header, p, &latest)?;
+
+        let result_html = render_markdown_into_template(&tera, &mut context, &m.header, p)?;
+
         write_output(output_dir, &m.rendered_to, result_html)?;
     }
 
