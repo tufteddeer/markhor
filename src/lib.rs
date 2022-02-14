@@ -81,19 +81,14 @@ pub fn write_output(
     let out_dir = out_dir.as_ref();
     let filename = filename.as_ref();
 
-    println!("filename: {}", filename.display());
-    println!("out_dir: {}", out_dir.display());
     let mut filepath = PathBuf::from(out_dir);
     filepath.push(filename);
-    println!("filepath: {}", filepath.display());
 
     // file target directory is the general out_dir, possibly followed by
     // an optional subfolder includes in the filename
     let mut out_file_dir = filepath.clone();
     out_file_dir.pop();
     let out_file_dir = out_file_dir.as_path();
-
-    println!("out dir with cat: {}", out_file_dir.display());
 
     if let Err(e) = fs::read_dir(out_file_dir) {
         match e.kind() {
