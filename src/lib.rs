@@ -20,6 +20,12 @@ pub mod templating;
 pub struct PostHeader {
     pub title: Option<String>,
     pub date: Option<String>,
+    pub category: Option<String>,
+}
+
+pub struct Post {
+    pub meta: PostMeta,
+    pub content: String,
 }
 
 ///
@@ -30,11 +36,11 @@ pub struct PostHeader {
 /// use std::cmp::Ordering::{self, Equal, Less, Greater};
 /// use yanos::compare_header_date;
 ///
-/// let a = PostHeader {title: None, date: Some("1900-01-01".to_string())};
-/// let b = PostHeader {title: None, date: Some("2022-01-01".to_string())};
-/// let c = PostHeader {title: None, date: Some("3333-01-01".to_string())};
-/// let d = PostHeader {title: None, date: Some("1900-01-01".to_string())};
-/// let e = PostHeader {title: None, date: None};
+/// let a = PostHeader {title: None, date: Some("1900-01-01".to_string()), category: None};
+/// let b = PostHeader {title: None, date: Some("2022-01-01".to_string()), category: None};
+/// let c = PostHeader {title: None, date: Some("3333-01-01".to_string()), category: None};
+/// let d = PostHeader {title: None, date: Some("1900-01-01".to_string()), category: None};
+/// let e = PostHeader {title: None, date: None, category: None};
 ///
 /// assert_eq!(compare_header_date(&a, &b), Less);
 /// assert_eq!(compare_header_date(&a, &c), Less);
@@ -74,24 +80,36 @@ pub fn write_output(
     let out_dir = out_dir.as_ref();
     let filename = filename.as_ref();
 
-    if let Err(e) = fs::read_dir(out_dir) {
+    println!("filename: {}", filename.display());
+    println!("out_dir: {}", out_dir.display());
+    let mut filepath = PathBuf::from(out_dir);
+    filepath.push(filename);
+    println!("filepath: {}", filepath.display());
+
+    // file target directory is the general out_dir, possibly followed by
+    // an optional subfolder includes in the filename
+    let mut out_file_dir = filepath.clone();
+    out_file_dir.pop();
+    let out_file_dir = out_file_dir.as_path();
+
+    println!("out dir with cat: {}", out_file_dir.display());
+
+    if let Err(e) = fs::read_dir(out_file_dir) {
         match e.kind() {
             io::ErrorKind::NotFound => {
-                info!("Creating output directory {}", out_dir.display());
-                fs::create_dir(out_dir)?;
+                info!("Creating output directory {}", out_file_dir.display());
+                fs::create_dir_all(out_file_dir)?;
             }
             _ => {
                 panic!(
                     "Failed to access output directory {}: {}",
-                    out_dir.display(),
+                    out_file_dir.display(),
                     e
                 );
             }
         }
     };
 
-    let mut filepath = PathBuf::from(out_dir);
-    filepath.push(filename);
     let mut file = File::create(filepath)?;
 
     write!(file, "{}", content)?;
