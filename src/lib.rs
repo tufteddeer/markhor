@@ -23,6 +23,7 @@ pub struct PostHeader {
     pub category: Option<String>,
 }
 
+#[derive(Serialize)]
 pub struct Post {
     pub meta: PostMeta,
     pub content: String,

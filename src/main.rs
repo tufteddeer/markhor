@@ -64,10 +64,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             write_output(dir, &meta.rendered_to, result_html)?;
         }
+
+        context.remove("post_content");
+        context.remove("header");
+
+        if let Some(cat) = category {
+            context.insert("category", cat);
+            context.insert("posts_in_category", &posts);
+            let category_page = tera.render("category.html", &context)?;
+
+            let category_out_file = format!("{cat}.html");
+            write_output(OUT_DIR, category_out_file, category_page)?;
+
+            context.remove("category");
+            context.remove("posts_in_category");
+        }
     }
 
-    context.remove("post_content");
-    context.remove("header");
     let index_html = render_index(&tera, &mut context)?;
 
     write_output(output_dir, "index.html", index_html)?;
