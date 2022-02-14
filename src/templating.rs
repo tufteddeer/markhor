@@ -1,7 +1,7 @@
 use log::{error, info};
 use tera::{Context, Tera};
 
-use crate::{PostHeader, PostMeta};
+use crate::PostHeader;
 
 pub fn init_tera(template_dir: &str) -> Tera {
     info!("Creating Tera");
@@ -29,10 +29,6 @@ pub fn render_markdown_into_template(
     tera.render("post.html", context)
 }
 
-pub fn render_index(tera: &Tera, posts_meta: &[PostMeta]) -> Result<String, tera::Error> {
-    let mut context = Context::new();
-
-    context.insert("post_toc", &posts_meta);
-
-    tera.render("index.html", &context)
+pub fn render_index(tera: &Tera, context: &mut Context) -> Result<String, tera::Error> {
+    tera.render("index.html", context)
 }
