@@ -12,7 +12,7 @@ use tera::Context;
 use yanos::{
     compare_header_date, compare_option,
     markdown::convert_posts,
-    templating::{self, render_index, render_markdown_into_template},
+    templating::{self, render_category_page, render_index, render_markdown_into_template},
     write_output, PostMeta,
 };
 
@@ -69,15 +69,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         context.remove("header");
 
         if let Some(cat) = category {
-            context.insert("category", cat);
-            context.insert("posts_in_category", &posts);
-            let category_page = tera.render("category.html", &context)?;
+            let category_page_html = render_category_page(&tera, &mut context, cat, posts)?;
 
             let category_out_file = format!("{cat}.html");
-            write_output(OUT_DIR, category_out_file, category_page)?;
-
-            context.remove("category");
-            context.remove("posts_in_category");
+            write_output(OUT_DIR, category_out_file, category_page_html)?;
         }
     }
 
