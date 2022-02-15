@@ -3,6 +3,12 @@ use tera::{Context, Tera};
 
 use crate::{Post, PostHeader};
 
+pub mod templates {
+    pub const INDEX: &str = "index.html";
+    pub const POST: &str = "post.html";
+    pub const CATEGORY: &str = "category.html";
+}
+
 pub fn init_tera(template_dir: &str) -> Tera {
     info!("Creating Tera");
     let mut tera = match Tera::new(template_dir) {
@@ -26,11 +32,11 @@ pub fn render_markdown_into_template(
     context.insert("markdown_content", &markdown);
     context.insert("header", &header);
 
-    tera.render("post.html", context)
+    tera.render(templates::POST, context)
 }
 
 pub fn render_index(tera: &Tera, context: &mut Context) -> Result<String, tera::Error> {
-    tera.render("index.html", context)
+    tera.render(templates::INDEX, context)
 }
 
 pub fn render_category_page(
@@ -42,7 +48,7 @@ pub fn render_category_page(
     context.insert("category", category);
     context.insert("posts_in_category", &posts);
 
-    let category_page = tera.render("category.html", &context)?;
+    let category_page = tera.render(templates::CATEGORY, &context)?;
 
     context.remove("category");
     context.remove("posts_in_category");
