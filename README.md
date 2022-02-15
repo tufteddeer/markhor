@@ -14,4 +14,4 @@
 |------------------- |------------------------ |
 | posts_in_category  | category                |
 | post_categories    | post, category, index   |
-| category           | post, category          |
+| category           | category          |
