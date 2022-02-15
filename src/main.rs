@@ -12,7 +12,7 @@ use tera::Context;
 use yanos::{
     compare_header_date, compare_option,
     markdown::convert_posts,
-    templating::{self, render_category_page, render_index, render_markdown_into_template},
+    templating::{self, render_category_page, render_index, render_markdown_into_template, values},
     write_output, PostMeta,
 };
 
@@ -48,8 +48,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let categories: Vec<&Option<String>> = posts_by_cat.keys().into_iter().collect();
 
     let mut context = Context::new();
-    context.insert("posts_meta", &sorted_meta);
-    context.insert("post_categories", &categories);
+    context.insert(values::POSTS_META, &sorted_meta);
+    context.insert(values::POST_CATEGORIES, &categories);
 
     for (category, posts) in &posts_by_cat {
         info!("Rendering category: {:?}", category);
@@ -65,8 +65,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             write_output(dir, &meta.rendered_to, result_html)?;
         }
 
-        context.remove("post_content");
-        context.remove("header");
+        context.remove(values::POST_CONTENT);
+        context.remove(values::HEADER);
 
         if let Some(cat) = category {
             let category_page_html = render_category_page(&tera, &mut context, cat, posts)?;
