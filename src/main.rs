@@ -1,4 +1,9 @@
-use std::{fs, io, ops::Sub, path::Path, time::Instant};
+use std::{
+    fs, io,
+    ops::Sub,
+    path::{Path, PathBuf},
+    time::Instant,
+};
 
 use fs_extra::{copy_items, dir};
 use log::info;
@@ -7,7 +12,7 @@ use tera::Context;
 use yanos::{
     compare_header_date, compare_option,
     markdown::convert_posts,
-    templating::{self, render_index, render_markdown_into_template},
+    templating::{self, render_category_page, render_index, render_markdown_into_template},
     write_output, PostMeta,
 };
 
@@ -15,7 +20,6 @@ const POSTS_DIR: &str = "posts";
 const OUT_DIR: &str = "out";
 const STATIC_DIR: &str = "static";
 const TEMPLATES_GLOB: &str = "templates/**/*";
-const NUM_LATEST_POSTS: usize = 10;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     SimpleLogger::new()
@@ -29,35 +33,50 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let tera = templating::init_tera(TEMPLATES_GLOB);
 
-    let (mut meta, posts) = convert_posts(posts_dir)?;
+    let posts_by_cat = convert_posts(posts_dir)?;
 
-    let mut latest = meta.clone();
-    latest.sort_unstable_by(|a, b| {
+    let mut sorted_meta: Vec<&PostMeta> = posts_by_cat
+        .iter()
+        .flat_map(|(_, postvec)| postvec.iter().map(|post| &post.meta))
+        .collect();
+    sorted_meta.sort_unstable_by(|a, b| {
         compare_option(&b.header, &a.header, |meta_a, meta_b| {
             compare_header_date(meta_a, meta_b)
         })
     });
-    let latest: Vec<&PostMeta> = latest.iter().take(NUM_LATEST_POSTS).collect();
+
+    let categories: Vec<&Option<String>> = posts_by_cat.keys().into_iter().collect();
 
     let mut context = Context::new();
-    context.insert("latest_posts", &latest);
+    context.insert("posts_meta", &sorted_meta);
+    context.insert("post_categories", &categories);
 
-    for i in 0..posts.len() {
-        let m = &meta[i];
-        let p = &posts[i];
+    for (category, posts) in &posts_by_cat {
+        info!("Rendering category: {:?}", category);
 
-        let result_html = render_markdown_into_template(&tera, &mut context, &m.header, p)?;
+        for post in posts {
+            let meta = &post.meta;
+            let content = &post.content;
+            let result_html =
+                render_markdown_into_template(&tera, &mut context, &meta.header, content)?;
 
-        write_output(output_dir, &m.rendered_to, result_html)?;
+            let dir = PathBuf::from(output_dir);
+
+            write_output(dir, &meta.rendered_to, result_html)?;
+        }
+
+        context.remove("post_content");
+        context.remove("header");
+
+        if let Some(cat) = category {
+            let category_page_html = render_category_page(&tera, &mut context, cat, posts)?;
+
+            let category_out_file = format!("{cat}.html");
+            write_output(OUT_DIR, category_out_file, category_page_html)?;
+        }
     }
 
-    meta.sort_unstable_by(|a, b| {
-        compare_option(&b.header, &a.header, |meta_a, meta_b| {
-            compare_header_date(meta_a, meta_b)
-        })
-    });
-
-    let index_html = render_index(&tera, &meta)?;
+    let index_html = render_index(&tera, &mut context)?;
 
     write_output(output_dir, "index.html", index_html)?;
 

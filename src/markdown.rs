@@ -1,12 +1,13 @@
 use log::info;
 use pulldown_cmark::{html, Parser};
 
+use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
 use std::ops::Add;
 use std::path::{Path, PathBuf};
 
-use crate::{PostHeader, PostMeta};
+use crate::{Post, PostHeader, PostMeta};
 
 pub const MARKDOWN_HEADER_DELIMITER: &str = "---\n";
 
@@ -41,6 +42,7 @@ pub fn convert_markdown(markdown: &str) -> String {
 /// use toml::value::Datetime;
 /// let input = r#"---
 /// title = "mytitle"
+/// category = "mycategory"
 /// ---
 /// *bold*"#.to_string();
 ///
@@ -51,6 +53,7 @@ pub fn convert_markdown(markdown: &str) -> String {
 /// let header = header.unwrap();
 ///
 /// assert_eq!(header.title.unwrap(), "mytitle".to_string());
+/// assert_eq!(header.category.unwrap(), "mycategory".to_string());
 /// assert_eq!(content, "*bold*")
 /// ```
 pub fn split_md_and_header(input: &str) -> Result<(Option<PostHeader>, &str), toml::de::Error> {
@@ -73,15 +76,15 @@ pub fn split_md_and_header(input: &str) -> Result<(Option<PostHeader>, &str), to
     }
 }
 
-/// Convert every file in `posts_dir` to html, generates meta info and returns the html representation
+/// Convert every file in `posts_dir` to html, generates meta info and the html representation
 ///
-/// Returns a `Vec` of [PostMeta] info about converted posts
+/// Returns a [HashMap] of [Post]s, keyed by category
 pub fn convert_posts(
     posts_dir: impl AsRef<Path>,
-) -> Result<(Vec<PostMeta>, Vec<String>), Box<dyn Error>> {
+) -> Result<HashMap<Option<String>, Vec<Post>>, Box<dyn Error>> {
     let posts_dir = posts_dir.as_ref();
-    let mut post_metadata = Vec::<PostMeta>::new();
-    let mut post_content = Vec::<String>::new();
+
+    let mut posts = HashMap::<Option<String>, Vec<Post>>::new();
 
     info!("Using markdown files in {:?}", posts_dir);
     for entry in fs::read_dir(posts_dir)? {
@@ -97,24 +100,49 @@ pub fn convert_posts(
 
         info!("Setting out_name for {:?} to {:?}", name, out_name);
 
-        let source = fs::read_to_string(filepath)?;
+        let source = fs::read_to_string(&filepath)?;
 
         let (header, markdown) = split_md_and_header(&source)?;
+
+        let mut category = None;
+        let mut out_path = if let Some(h) = &header {
+            if let Some(cat) = &h.category {
+                info!("Post {} has category {}", filepath.display(), cat);
+                category = Some(cat.to_string());
+                PathBuf::from(cat)
+            } else {
+                PathBuf::new()
+            }
+        } else {
+            PathBuf::new()
+        };
+
+        out_path.push(out_name);
 
         let markdown_html = convert_markdown(markdown);
 
         let meta = PostMeta {
             source_file: name.into_string().unwrap(),
-            rendered_to: out_name,
+            rendered_to: out_path.to_string_lossy().to_string(),
             header,
         };
 
-        post_content.push(markdown_html);
+        let post = Post {
+            meta,
+            content: markdown_html,
+        };
 
-        post_metadata.push(meta);
+        match posts.get_mut(&category) {
+            Some(postvec) => {
+                postvec.push(post);
+            }
+            None => {
+                posts.insert(category, vec![post]);
+            }
+        }
     }
 
-    Ok((post_metadata, post_content))
+    Ok(posts)
 }
 
 #[cfg(test)]
