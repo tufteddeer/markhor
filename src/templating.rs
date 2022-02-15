@@ -1,7 +1,7 @@
 use log::{error, info};
 use tera::{Context, Tera};
 
-use crate::{PostHeader, PostMeta};
+use crate::{Post, PostHeader};
 
 pub fn init_tera(template_dir: &str) -> Tera {
     info!("Creating Tera");
@@ -29,10 +29,23 @@ pub fn render_markdown_into_template(
     tera.render("post.html", context)
 }
 
-pub fn render_index(tera: &Tera, posts_meta: &[PostMeta]) -> Result<String, tera::Error> {
-    let mut context = Context::new();
+pub fn render_index(tera: &Tera, context: &mut Context) -> Result<String, tera::Error> {
+    tera.render("index.html", context)
+}
 
-    context.insert("post_toc", &posts_meta);
+pub fn render_category_page(
+    tera: &Tera,
+    context: &mut Context,
+    category: &String,
+    posts: &[Post],
+) -> Result<String, tera::Error> {
+    context.insert("category", category);
+    context.insert("posts_in_category", &posts);
 
-    tera.render("index.html", &context)
+    let category_page = tera.render("category.html", &context)?;
+
+    context.remove("category");
+    context.remove("posts_in_category");
+
+    Ok(category_page)
 }

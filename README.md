@@ -7,3 +7,11 @@
 - A list of posts is rendered in the `index.html` template (newest first)
 - Templates use the [Tera](https://tera.netlify.app/) template engine
 - Static content directory (`static`) is copied to `out/static`
+
+## Variables
+
+| **Variable**       | **Template**            |
+|------------------- |------------------------ |
+| posts_in_category  | category                |
+| post_categories    | post, category, index   |
+| category           | post, category          |
