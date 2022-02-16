@@ -13,6 +13,8 @@ use std::{
 };
 
 pub mod markdown;
+#[cfg(feature = "serve")]
+pub mod serve;
 pub mod templating;
 
 /// PostHeader represents metadata added at the start of a markdown post.
