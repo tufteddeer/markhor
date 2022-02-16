@@ -7,6 +7,7 @@
 - A list of posts is rendered in the `index.html` template (newest first)
 - Templates use the [Tera](https://tera.netlify.app/) template engine
 - Static content directory (`static`) is copied to `out/static`
+- Serve generated site (`--serve`, only for development purposes, needs "serve" feature enabled)
 
 ## Variables
 
