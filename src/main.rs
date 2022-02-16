@@ -5,10 +5,13 @@ use std::{
     time::Instant,
 };
 
+use clap::Parser;
 use fs_extra::{copy_items, dir};
 use log::info;
 use simple_logger::SimpleLogger;
 use tera::Context;
+#[cfg(feature = "serve")]
+use yanos::serve::serve_files;
 use yanos::{
     compare_header_date, compare_option,
     markdown::convert_posts,
@@ -21,7 +24,17 @@ const OUT_DIR: &str = "out";
 const STATIC_DIR: &str = "static";
 const TEMPLATES_GLOB: &str = "templates/**/*";
 
+#[derive(Parser, Debug)]
+#[clap(version)]
+struct Args {
+    /// Serve generated files
+    #[clap(long)]
+    serve: bool,
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = Args::parse();
+
     SimpleLogger::new()
         .with_module_level("globset", log::LevelFilter::Error)
         .init()?;
@@ -100,6 +113,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let from = vec![STATIC_DIR];
         copy_items(&from, output_dir, &options)?;
+    }
+
+    if args.serve {
+        #[cfg(feature = "serve")]
+        serve_files("127.0.0.1:8080", output_dir)?;
+        #[cfg(not(feature = "serve"))]
+        log::error!("Feature 'serve' was not enabled during compilation. Server not available");
     }
 
     Ok(())
