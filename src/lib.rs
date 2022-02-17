@@ -1,14 +1,19 @@
 use chrono::NaiveDate;
-use log::info;
+use fs_extra::{copy_items, dir};
+use log::{error, info, trace};
 
 use markdown::convert_posts;
+use notify::{DebouncedEvent, RecommendedWatcher, RecursiveMode, Watcher};
 use serde::{Deserialize, Serialize};
 use templating::{render_index, values};
 use tera::Context;
 
 use std::cmp::Ordering::{self, Equal, Greater, Less};
 use std::io::Write;
+use std::ops::Sub;
 use std::path::{Path, PathBuf};
+use std::sync::mpsc::channel;
+use std::time::{Duration, Instant};
 use std::{
     error::Error,
     fs::{self, File},
@@ -88,6 +93,8 @@ pub fn generate_site<P>(
 where
     P: AsRef<Path> + Copy,
 {
+    let start_time = Instant::now();
+
     let tera = templating::init_tera(templates_glob);
 
     let posts_by_cat = convert_posts(posts_dir)?;
@@ -135,6 +142,8 @@ where
 
     write_output(output_dir, "index.html", index_html)?;
 
+    let elapsed_time = Instant::now().sub(start_time);
+    log::info!("Took {}ms", &elapsed_time.as_millis());
     Ok(())
 }
 
@@ -176,6 +185,69 @@ pub fn write_output(
     write!(file, "{}", content)?;
 
     Ok(())
+}
+
+pub fn copy_static_files<P>(static_dir: P, out_dir: P) -> Result<(), Box<dyn Error>>
+where
+    P: AsRef<Path> + Copy,
+{
+    if let Err(e) = fs::read_dir(static_dir) {
+        match e.kind() {
+            io::ErrorKind::NotFound => {
+                info!("No static directory found, skipping");
+            }
+            _ => {
+                panic!(
+                    "Failed to access static directory {}: {}",
+                    &static_dir.as_ref().display(),
+                    e
+                );
+            }
+        }
+    } else {
+        info!("Copying static assets");
+
+        let mut options = dir::CopyOptions::new();
+        options.overwrite = true;
+
+        let from = vec![static_dir];
+        copy_items(&from, out_dir, &options)?;
+    }
+
+    Ok(())
+}
+
+pub fn watch_directories<F, P>(
+    templates_dir: P,
+    posts_dir: P,
+    static_dir: P,
+    listener: F,
+) -> notify::Result<()>
+where
+    P: AsRef<Path>,
+    F: FnOnce(notify::DebouncedEvent) -> () + Copy,
+{
+    let (tx, rx) = channel();
+
+    let mut watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_secs(1))?;
+
+    (watcher.watch(templates_dir, RecursiveMode::Recursive))?;
+    (watcher.watch(static_dir, RecursiveMode::Recursive))?;
+    (watcher.watch(posts_dir, RecursiveMode::Recursive))?;
+
+    loop {
+        match rx.recv() {
+            Ok(event) => match event {
+                DebouncedEvent::Write(..)
+                | DebouncedEvent::Create(..)
+                | DebouncedEvent::Remove(..)
+                | DebouncedEvent::Rename(..) => listener(event),
+
+                _ => trace!("ignoring change: {:#?}", event),
+            },
+            Err(e) => error!("watch error: {:?}", e),
+        }
+    }
 }
 
 /// Compare two [Option]s with values that don't implement `Eq`, `Ord` etc.

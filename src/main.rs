@@ -1,17 +1,18 @@
-use std::{fs, io, ops::Sub, path::Path, time::Instant};
+use std::path::Path;
+use std::thread;
 
 use clap::Parser;
-use fs_extra::{copy_items, dir};
-use log::info;
+use log::{error, info};
 use simple_logger::SimpleLogger;
 
-use yanos::generate_site;
 #[cfg(feature = "serve")]
 use yanos::serve::serve_files;
+use yanos::{copy_static_files, generate_site, watch_directories};
 
 const POSTS_DIR: &str = "posts";
 const OUT_DIR: &str = "out";
 const STATIC_DIR: &str = "static";
+const TEMPLATES_DIR: &str = "templates";
 const TEMPLATES_GLOB: &str = "templates/**/*";
 
 #[derive(Parser, Debug)]
@@ -20,6 +21,9 @@ struct Args {
     /// Serve generated files
     #[clap(long)]
     serve: bool,
+    /// Watch source directories for changes and rebuild
+    #[clap(long)]
+    watch: bool,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -32,38 +36,34 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let posts_dir = Path::new(POSTS_DIR);
     let output_dir = Path::new(OUT_DIR);
 
-    let start_time = Instant::now();
-
     generate_site(TEMPLATES_GLOB, posts_dir, output_dir)?;
 
-    let elapsed_time = Instant::now().sub(start_time);
-    log::info!("Took {}ms", &elapsed_time.as_millis());
-
-    if let Err(e) = fs::read_dir(STATIC_DIR) {
-        match e.kind() {
-            io::ErrorKind::NotFound => {
-                info!("No static directory found, skipping");
-            }
-            _ => {
-                panic!("Failed to access static directory {}: {}", STATIC_DIR, e);
-            }
-        }
-    } else {
-        info!("Copying static assets");
-
-        let mut options = dir::CopyOptions::new();
-        options.overwrite = true;
-
-        let from = vec![STATIC_DIR];
-        copy_items(&from, output_dir, &options)?;
-    }
+    copy_static_files(STATIC_DIR, OUT_DIR)?;
 
     if args.serve {
         #[cfg(feature = "serve")]
-        serve_files("127.0.0.1:8080", output_dir)?;
+        thread::spawn(|| {
+            if let Err(error) = serve_files("127.0.0.1:8080", output_dir) {
+                error!("Failed serving files: {}", error);
+            }
+        });
         #[cfg(not(feature = "serve"))]
         log::error!("Feature 'serve' was not enabled during compilation. Server not available");
     }
+    if args.watch {
+        #[cfg(feature = "watch")]
+        println!("watching...");
+        #[cfg(not(feature = "watch"))]
+        log::error!("Feature 'watch' was not enabled during compilation. Watching not available");
+    }
 
+    if let Err(e) = watch_directories(TEMPLATES_DIR, POSTS_DIR, STATIC_DIR, |_| {
+        info!("Change detected, regenerating...");
+        if let Err(error) = generate_site(TEMPLATES_GLOB, POSTS_DIR, OUT_DIR) {
+            error!("Failed generating site: {}", error);
+        }
+    }) {
+        error!("Failed to watch files: {:?}", e)
+    }
     Ok(())
 }
