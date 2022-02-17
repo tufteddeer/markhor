@@ -7,7 +7,7 @@ use simple_logger::SimpleLogger;
 
 #[cfg(feature = "serve")]
 use yanos::serve::serve_files;
-use yanos::{copy_static_files, generate_site, watch_directories};
+use yanos::{copy_static_files, generate_site, watch::watch_directories};
 
 const POSTS_DIR: &str = "posts";
 const OUT_DIR: &str = "out";
@@ -52,18 +52,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     if args.watch {
         #[cfg(feature = "watch")]
-        println!("watching...");
+        info!("Watching files for changes...");
+        if let Err(e) = watch_directories(TEMPLATES_DIR, POSTS_DIR, STATIC_DIR, |_| {
+            info!("Change detected, regenerating...");
+            if let Err(error) = generate_site(TEMPLATES_GLOB, POSTS_DIR, OUT_DIR) {
+                error!("Failed generating site: {}", error);
+            }
+        }) {
+            error!("Failed to watch files: {:?}", e)
+        }
         #[cfg(not(feature = "watch"))]
         log::error!("Feature 'watch' was not enabled during compilation. Watching not available");
     }
 
-    if let Err(e) = watch_directories(TEMPLATES_DIR, POSTS_DIR, STATIC_DIR, |_| {
-        info!("Change detected, regenerating...");
-        if let Err(error) = generate_site(TEMPLATES_GLOB, POSTS_DIR, OUT_DIR) {
-            error!("Failed generating site: {}", error);
-        }
-    }) {
-        error!("Failed to watch files: {:?}", e)
-    }
     Ok(())
 }
