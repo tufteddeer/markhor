@@ -1,7 +1,10 @@
 use chrono::NaiveDate;
 use log::info;
 
+use markdown::convert_posts;
 use serde::{Deserialize, Serialize};
+use templating::{render_index, values};
+use tera::Context;
 
 use std::cmp::Ordering::{self, Equal, Greater, Less};
 use std::io::Write;
@@ -11,6 +14,8 @@ use std::{
     fs::{self, File},
     io,
 };
+
+use crate::templating::{render_category_page, render_markdown_into_template};
 
 pub mod markdown;
 #[cfg(feature = "serve")]
@@ -73,6 +78,64 @@ pub struct PostMeta {
     pub rendered_to: String,
     /// an optional [PostHeader] contained within the source file
     pub header: Option<PostHeader>,
+}
+
+pub fn generate_site<P>(
+    templates_glob: &str,
+    posts_dir: P,
+    output_dir: P,
+) -> Result<(), Box<dyn Error>>
+where
+    P: AsRef<Path> + Copy,
+{
+    let tera = templating::init_tera(templates_glob);
+
+    let posts_by_cat = convert_posts(posts_dir)?;
+
+    let mut sorted_meta: Vec<&PostMeta> = posts_by_cat
+        .iter()
+        .flat_map(|(_, postvec)| postvec.iter().map(|post| &post.meta))
+        .collect();
+    sorted_meta.sort_unstable_by(|a, b| {
+        compare_option(&b.header, &a.header, |meta_a, meta_b| {
+            compare_header_date(meta_a, meta_b)
+        })
+    });
+
+    let categories: Vec<&Option<String>> = posts_by_cat.keys().into_iter().collect();
+
+    let mut context = Context::new();
+    context.insert(values::POSTS_META, &sorted_meta);
+    context.insert(values::POST_CATEGORIES, &categories);
+
+    for (category, posts) in &posts_by_cat {
+        info!("Rendering category: {:?}", category);
+
+        for post in posts {
+            let meta = &post.meta;
+            let content = &post.content;
+            let result_html =
+                render_markdown_into_template(&tera, &mut context, &meta.header, content)?;
+
+            write_output(&output_dir, &meta.rendered_to, result_html)?;
+        }
+
+        context.remove(values::POST_CONTENT);
+        context.remove(values::HEADER);
+
+        if let Some(cat) = category {
+            let category_page_html = render_category_page(&tera, &mut context, cat, posts)?;
+
+            let category_out_file = format!("{cat}.html");
+            write_output(output_dir, category_out_file, category_page_html)?;
+        }
+    }
+
+    let index_html = render_index(&tera, &mut context)?;
+
+    write_output(output_dir, "index.html", index_html)?;
+
+    Ok(())
 }
 
 pub fn write_output(
