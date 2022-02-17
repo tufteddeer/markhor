@@ -1,9 +1,8 @@
 use chrono::NaiveDate;
 use fs_extra::{copy_items, dir};
-use log::{error, info, trace};
+use log::info;
 
 use markdown::convert_posts;
-use notify::{DebouncedEvent, RecommendedWatcher, RecursiveMode, Watcher};
 use serde::{Deserialize, Serialize};
 use templating::{render_index, values};
 use tera::Context;
@@ -12,8 +11,7 @@ use std::cmp::Ordering::{self, Equal, Greater, Less};
 use std::io::Write;
 use std::ops::Sub;
 use std::path::{Path, PathBuf};
-use std::sync::mpsc::channel;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use std::{
     error::Error,
     fs::{self, File},
@@ -26,6 +24,8 @@ pub mod markdown;
 #[cfg(feature = "serve")]
 pub mod serve;
 pub mod templating;
+#[cfg(feature = "watch")]
+pub mod watch;
 
 /// PostHeader represents metadata added at the start of a markdown post.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
@@ -215,39 +215,6 @@ where
     }
 
     Ok(())
-}
-
-pub fn watch_directories<F, P>(
-    templates_dir: P,
-    posts_dir: P,
-    static_dir: P,
-    listener: F,
-) -> notify::Result<()>
-where
-    P: AsRef<Path>,
-    F: FnOnce(notify::DebouncedEvent) -> () + Copy,
-{
-    let (tx, rx) = channel();
-
-    let mut watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_secs(1))?;
-
-    (watcher.watch(templates_dir, RecursiveMode::Recursive))?;
-    (watcher.watch(static_dir, RecursiveMode::Recursive))?;
-    (watcher.watch(posts_dir, RecursiveMode::Recursive))?;
-
-    loop {
-        match rx.recv() {
-            Ok(event) => match event {
-                DebouncedEvent::Write(..)
-                | DebouncedEvent::Create(..)
-                | DebouncedEvent::Remove(..)
-                | DebouncedEvent::Rename(..) => listener(event),
-
-                _ => trace!("ignoring change: {:#?}", event),
-            },
-            Err(e) => error!("watch error: {:?}", e),
-        }
-    }
 }
 
 /// Compare two [Option]s with values that don't implement `Eq`, `Ord` etc.
