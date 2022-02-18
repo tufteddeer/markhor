@@ -9,6 +9,11 @@ on:
 name: Tests
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        features: ["--no-default-features", "--features serve", "--features watch", "--features \"serve watch\""]
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -20,3 +25,4 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
+          args: ${{ matrix.features }}
