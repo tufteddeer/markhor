@@ -54,6 +54,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     if let Err(error) = generate_site(TEMPLATES_GLOB, POSTS_DIR, OUT_DIR) {
                         log::error!("Failed generating site: {}", error);
                     }
+
+                    if let Err(error) = copy_static_files(STATIC_DIR, OUT_DIR) {
+                        log::error!("Failed to copy static assets: {}", error);
+                    }
                 })
             {
                 log::error!("Failed to watch files: {:?}", e)
