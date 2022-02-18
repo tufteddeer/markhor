@@ -9,12 +9,10 @@ on:
 name: Tests
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  test:
     strategy:
       matrix:
         features: ["--no-default-features", "--features serve", "--features watch", "--features \"serve watch\""]
-  test:
     name: Test
     runs-on: ubuntu-latest
     steps:
