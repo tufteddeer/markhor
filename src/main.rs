@@ -1,13 +1,11 @@
 use std::path::Path;
-use std::thread;
+use std::thread::{self, JoinHandle};
 
 use clap::Parser;
-use log::{error, info};
+use log::info;
 use simple_logger::SimpleLogger;
 
-#[cfg(feature = "serve")]
-use yanos::serve::serve_files;
-use yanos::{copy_static_files, generate_site, watch::watch_directories};
+use yanos::{copy_static_files, generate_site};
 
 const POSTS_DIR: &str = "posts";
 const OUT_DIR: &str = "out";
@@ -40,30 +38,47 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     copy_static_files(STATIC_DIR, OUT_DIR)?;
 
-    if args.serve {
-        #[cfg(feature = "serve")]
-        thread::spawn(|| {
-            if let Err(error) = serve_files("127.0.0.1:8080", output_dir) {
-                error!("Failed serving files: {}", error);
-            }
-        });
-        #[cfg(not(feature = "serve"))]
-        log::error!("Feature 'serve' was not enabled during compilation. Server not available");
-    }
+    let serve_handle = if args.serve {
+        spawn_fileserver(output_dir)
+    } else {
+        None
+    };
+
     if args.watch {
         #[cfg(feature = "watch")]
-        info!("Watching files for changes...");
-        if let Err(e) = watch_directories(TEMPLATES_DIR, POSTS_DIR, STATIC_DIR, |_| {
-            info!("Change detected, regenerating...");
-            if let Err(error) = generate_site(TEMPLATES_GLOB, POSTS_DIR, OUT_DIR) {
-                error!("Failed generating site: {}", error);
+        {
+            info!("Watching files for changes...");
+            if let Err(e) =
+                yanos::watch::watch_directories(TEMPLATES_DIR, POSTS_DIR, STATIC_DIR, |_| {
+                    log::info!("Change detected, regenerating...");
+                    if let Err(error) = generate_site(TEMPLATES_GLOB, POSTS_DIR, OUT_DIR) {
+                        log::error!("Failed generating site: {}", error);
+                    }
+                })
+            {
+                log::error!("Failed to watch files: {:?}", e)
             }
-        }) {
-            error!("Failed to watch files: {:?}", e)
         }
         #[cfg(not(feature = "watch"))]
         log::error!("Feature 'watch' was not enabled during compilation. Watching not available");
     }
 
+    if let Some(handle) = serve_handle {
+        handle.join().expect("Failed to join threads");
+    }
     Ok(())
+}
+
+#[cfg(feature = "serve")]
+fn spawn_fileserver(output_dir: &'static Path) -> Option<JoinHandle<()>> {
+    Some(thread::spawn(move || {
+        if let Err(error) = yanos::serve::serve_files("127.0.0.1:8080", &output_dir) {
+            log::error!("Failed serving files: {}", error);
+        }
+    }))
+}
+#[cfg(not(feature = "serve"))]
+fn spawn_fileserver(_: &'static Path) -> Option<JoinHandle<()>> {
+    log::error!("Feature 'serve' was not enabled during compilation. Server not available");
+    None
 }
