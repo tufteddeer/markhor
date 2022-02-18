@@ -61,6 +61,9 @@ pub struct Post {
 /// assert_eq!(compare_header_date(&b, &a), Greater);
 /// assert_eq!(compare_header_date(&b, &c), Less);
 /// assert_eq!(compare_header_date(&e, &e), Equal);
+/// 
+/// #[cfg(feature = "serve")]
+/// assert!(false);
 /// ```
 pub fn compare_header_date(a: &PostHeader, b: &PostHeader) -> Ordering {
     let da = a.date.as_ref();
