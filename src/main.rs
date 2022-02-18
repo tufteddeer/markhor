@@ -1,27 +1,16 @@
-use std::{
-    fs, io,
-    ops::Sub,
-    path::{Path, PathBuf},
-    time::Instant,
-};
+use std::path::Path;
+use std::thread::{self, JoinHandle};
 
 use clap::Parser;
-use fs_extra::{copy_items, dir};
 use log::info;
 use simple_logger::SimpleLogger;
-use tera::Context;
-#[cfg(feature = "serve")]
-use yanos::serve::serve_files;
-use yanos::{
-    compare_header_date, compare_option,
-    markdown::convert_posts,
-    templating::{self, render_category_page, render_index, render_markdown_into_template, values},
-    write_output, PostMeta,
-};
+
+use yanos::{copy_static_files, generate_site};
 
 const POSTS_DIR: &str = "posts";
 const OUT_DIR: &str = "out";
 const STATIC_DIR: &str = "static";
+const TEMPLATES_DIR: &str = "templates";
 const TEMPLATES_GLOB: &str = "templates/**/*";
 
 #[derive(Parser, Debug)]
@@ -30,6 +19,9 @@ struct Args {
     /// Serve generated files
     #[clap(long)]
     serve: bool,
+    /// Watch source directories for changes and rebuild
+    #[clap(long)]
+    watch: bool,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -42,85 +34,51 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let posts_dir = Path::new(POSTS_DIR);
     let output_dir = Path::new(OUT_DIR);
 
-    let start_time = Instant::now();
+    generate_site(TEMPLATES_GLOB, posts_dir, output_dir)?;
 
-    let tera = templating::init_tera(TEMPLATES_GLOB);
+    copy_static_files(STATIC_DIR, OUT_DIR)?;
 
-    let posts_by_cat = convert_posts(posts_dir)?;
-
-    let mut sorted_meta: Vec<&PostMeta> = posts_by_cat
-        .iter()
-        .flat_map(|(_, postvec)| postvec.iter().map(|post| &post.meta))
-        .collect();
-    sorted_meta.sort_unstable_by(|a, b| {
-        compare_option(&b.header, &a.header, |meta_a, meta_b| {
-            compare_header_date(meta_a, meta_b)
-        })
-    });
-
-    let categories: Vec<&Option<String>> = posts_by_cat.keys().into_iter().collect();
-
-    let mut context = Context::new();
-    context.insert(values::POSTS_META, &sorted_meta);
-    context.insert(values::POST_CATEGORIES, &categories);
-
-    for (category, posts) in &posts_by_cat {
-        info!("Rendering category: {:?}", category);
-
-        for post in posts {
-            let meta = &post.meta;
-            let content = &post.content;
-            let result_html =
-                render_markdown_into_template(&tera, &mut context, &meta.header, content)?;
-
-            let dir = PathBuf::from(output_dir);
-
-            write_output(dir, &meta.rendered_to, result_html)?;
-        }
-
-        context.remove(values::POST_CONTENT);
-        context.remove(values::HEADER);
-
-        if let Some(cat) = category {
-            let category_page_html = render_category_page(&tera, &mut context, cat, posts)?;
-
-            let category_out_file = format!("{cat}.html");
-            write_output(OUT_DIR, category_out_file, category_page_html)?;
-        }
-    }
-
-    let index_html = render_index(&tera, &mut context)?;
-
-    write_output(output_dir, "index.html", index_html)?;
-
-    let elapsed_time = Instant::now().sub(start_time);
-    log::info!("Took {}ms", &elapsed_time.as_millis());
-
-    if let Err(e) = fs::read_dir(STATIC_DIR) {
-        match e.kind() {
-            io::ErrorKind::NotFound => {
-                info!("No static directory found, skipping");
-            }
-            _ => {
-                panic!("Failed to access static directory {}: {}", STATIC_DIR, e);
-            }
-        }
+    let serve_handle = if args.serve {
+        spawn_fileserver(output_dir)
     } else {
-        info!("Copying static assets");
+        None
+    };
 
-        let mut options = dir::CopyOptions::new();
-        options.overwrite = true;
-
-        let from = vec![STATIC_DIR];
-        copy_items(&from, output_dir, &options)?;
+    if args.watch {
+        #[cfg(feature = "watch")]
+        {
+            info!("Watching files for changes...");
+            if let Err(e) =
+                yanos::watch::watch_directories(TEMPLATES_DIR, POSTS_DIR, STATIC_DIR, |_| {
+                    log::info!("Change detected, regenerating...");
+                    if let Err(error) = generate_site(TEMPLATES_GLOB, POSTS_DIR, OUT_DIR) {
+                        log::error!("Failed generating site: {}", error);
+                    }
+                })
+            {
+                log::error!("Failed to watch files: {:?}", e)
+            }
+        }
+        #[cfg(not(feature = "watch"))]
+        log::error!("Feature 'watch' was not enabled during compilation. Watching not available");
     }
 
-    if args.serve {
-        #[cfg(feature = "serve")]
-        serve_files("127.0.0.1:8080", output_dir)?;
-        #[cfg(not(feature = "serve"))]
-        log::error!("Feature 'serve' was not enabled during compilation. Server not available");
+    if let Some(handle) = serve_handle {
+        handle.join().expect("Failed to join threads");
     }
-
     Ok(())
+}
+
+#[cfg(feature = "serve")]
+fn spawn_fileserver(output_dir: &'static Path) -> Option<JoinHandle<()>> {
+    Some(thread::spawn(move || {
+        if let Err(error) = yanos::serve::serve_files("127.0.0.1:8080", &output_dir) {
+            log::error!("Failed serving files: {}", error);
+        }
+    }))
+}
+#[cfg(not(feature = "serve"))]
+fn spawn_fileserver(_: &'static Path) -> Option<JoinHandle<()>> {
+    log::error!("Feature 'serve' was not enabled during compilation. Server not available");
+    None
 }
