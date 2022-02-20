@@ -21,10 +21,8 @@ use std::{
 use crate::templating::{render_category_page, render_markdown_into_template};
 
 pub mod markdown;
-#[cfg(feature = "serve")]
 pub mod serve;
 pub mod templating;
-#[cfg(feature = "watch")]
 pub mod watch;
 
 /// PostHeader represents metadata added at the start of a markdown post.
