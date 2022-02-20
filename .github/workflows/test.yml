@@ -10,9 +10,6 @@ name: Tests
 
 jobs:
   test:
-    strategy:
-      matrix:
-        features: ["--no-default-features", "--features serve", "--features watch", "--features \"serve watch\""]
     name: Test
     runs-on: ubuntu-latest
     steps:
@@ -23,4 +20,3 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: ${{ matrix.features }}
