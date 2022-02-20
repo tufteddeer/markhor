@@ -25,6 +25,9 @@ pub mod serve;
 pub mod templating;
 pub mod watch;
 
+#[cfg(all(feature = "serve", feature = "watch"))]
+pub mod livereload;
+
 /// PostHeader represents metadata added at the start of a markdown post.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
 pub struct PostHeader {
