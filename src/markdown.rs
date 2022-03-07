@@ -1,7 +1,7 @@
 use log::info;
 use pulldown_cmark::{html, Parser};
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::error::Error;
 use std::fs;
 use std::ops::Add;
@@ -81,10 +81,10 @@ pub fn split_md_and_header(input: &str) -> Result<(Option<PostHeader>, &str), to
 /// Returns a [HashMap] of [Post]s, keyed by category
 pub fn convert_posts(
     posts_dir: impl AsRef<Path>,
-) -> Result<HashMap<Option<String>, Vec<Post>>, Box<dyn Error>> {
+) -> Result<BTreeMap<Option<String>, Vec<Post>>, Box<dyn Error>> {
     let posts_dir = posts_dir.as_ref();
 
-    let mut posts = HashMap::<Option<String>, Vec<Post>>::new();
+    let mut posts = BTreeMap::<Option<String>, Vec<Post>>::new();
 
     info!("Using markdown files in {:?}", posts_dir);
     for entry in fs::read_dir(posts_dir)? {
