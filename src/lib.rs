@@ -37,6 +37,15 @@ pub struct PostHeader {
 pub struct Post {
     pub meta: PostMeta,
     pub content: String,
+    pub headings: Vec<TocHeading>,
+}
+
+/// Table of contents entry for posts
+#[derive(Serialize, Clone)]
+pub struct TocHeading {
+    pub level: u8,
+    pub prev_level: Option<u8>,
+    pub text: String,
 }
 
 ///
@@ -93,7 +102,7 @@ where
 {
     let start_time = Instant::now();
 
-    let tera = templating::init_tera(templates_glob);
+    let mut tera = templating::init_tera(templates_glob);
 
     let posts_by_cat = convert_posts(posts_dir)?;
 
@@ -119,8 +128,13 @@ where
         for post in posts {
             let meta = &post.meta;
             let content = &post.content;
-            let result_html =
-                render_markdown_into_template(&tera, &mut context, &meta.header, content)?;
+            let result_html = render_markdown_into_template(
+                &mut tera,
+                &mut context,
+                &meta.header,
+                content,
+                &post.headings,
+            )?;
 
             write_output(&output_dir, &meta.rendered_to, result_html)?;
         }

@@ -1,13 +1,15 @@
 use log::info;
-use pulldown_cmark::{html, Parser};
+use pulldown_cmark::{html, Parser, Tag};
 
+use crate::{Post, PostHeader, PostMeta, TocHeading};
+use pulldown_cmark::Event::End;
+use pulldown_cmark::Event::Start;
+use pulldown_cmark::Event::Text;
 use std::collections::BTreeMap;
 use std::error::Error;
 use std::fs;
 use std::ops::Add;
 use std::path::{Path, PathBuf};
-
-use crate::{Post, PostHeader, PostMeta};
 
 pub const MARKDOWN_HEADER_DELIMITER: &str = "---\n";
 
@@ -17,18 +19,71 @@ pub const MARKDOWN_HEADER_DELIMITER: &str = "---\n";
 /// ```
 /// use yanos::markdown::convert_markdown;
 ///
-/// let md = "# Heading";
-/// let html = convert_markdown(md);
+/// let md = r"# Heading
+/// ### second";
+/// let (html, headings) = convert_markdown(md);
 ///
-/// assert_eq!(html, "<h1>Heading</h1>\n")
+/// assert_eq!(html, "<h1>Heading</h1>\n<h2>second</h2>\n");
+/// assert_eq!(headings.len(), 2);
+/// assert_eq!(headings[0].level, 1);
+/// assert_eq!(headings[0].prev_level, None);
+/// assert_eq!(headings[0].text, "Heading");
+///
+/// assert_eq!(headings[1].level, 2);
+/// assert_eq!(headings[1].prev_level, Some(1));
+/// assert_eq!(headings[1].text, "second");
 /// ```
-pub fn convert_markdown(markdown: &str) -> String {
+pub fn convert_markdown(markdown: &str) -> (String, Vec<TocHeading>) {
     let parser = Parser::new(markdown);
 
-    let mut html_out = String::new();
-    html::push_html(&mut html_out, parser);
+    let mut in_heading = false;
 
-    html_out
+    let mut headings = Vec::<TocHeading>::new();
+    // string to collect all the text inside a heading (if there are nested tags inside the h tags)
+    // will keep the text, but loose the tags
+    let mut current_heading = String::new();
+    let iterator = parser.map(|event| {
+        match &event {
+            Start(Tag::Heading(_, _, _)) => {
+                in_heading = true;
+                current_heading = String::new();
+            }
+            End(Tag::Heading(level, _, _)) => {
+                in_heading = false;
+                if !current_heading.is_empty() {
+                    let s = level.to_string();
+                    let lvl_num = s
+                        .strip_prefix('h')
+                        .expect("failed to strip h from heading tag");
+                    let lvl_num = lvl_num
+                        .parse::<u8>()
+                        .expect("failed to parse heading level to int");
+
+                    let prev_level = headings.last().map(|prev| prev.level);
+
+                    let toc_entry = TocHeading {
+                        level: lvl_num,
+                        prev_level,
+                        text: current_heading.clone(),
+                    };
+                    headings.push(toc_entry);
+                }
+            }
+            Text(text) => {
+                if in_heading {
+                    current_heading.push_str(text);
+                }
+            }
+            _ => {}
+        }
+
+        event
+    });
+
+    let mut html_out = String::new();
+    html::push_html(&mut html_out, iterator);
+
+    (html_out, headings)
 }
 
 /// Parse an optional [PostHeader] located at the start of a markdown document
@@ -119,7 +174,7 @@ pub fn convert_posts(
 
         out_path.push(out_name);
 
-        let markdown_html = convert_markdown(markdown);
+        let (markdown_html, headings) = convert_markdown(markdown);
 
         let meta = PostMeta {
             source_file: name.into_string().unwrap(),
@@ -130,6 +185,7 @@ pub fn convert_posts(
         let post = Post {
             meta,
             content: markdown_html,
+            headings,
         };
 
         match posts.get_mut(&category) {
