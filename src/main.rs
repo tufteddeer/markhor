@@ -41,7 +41,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let serve_handle = if args.serve {
         Some(thread::spawn(move || {
-            yanos::serve::serve_files("127.0.0.1:8080", &output_dir)
+            yanos::serve::serve_files("127.0.0.1:8080", output_dir)
                 .expect("Failed to start fileserver");
         }))
     } else {

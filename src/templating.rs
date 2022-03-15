@@ -57,13 +57,13 @@ pub fn render_index(tera: &Tera, context: &mut Context) -> Result<String, tera::
 pub fn render_category_page(
     tera: &Tera,
     context: &mut Context,
-    category: &String,
+    category: &str,
     posts: &[Post],
 ) -> Result<String, tera::Error> {
     context.insert(values::CATEGORY, category);
     context.insert(values::POSTS_IN_CATEGORY, &posts);
 
-    let category_page = tera.render(templates::CATEGORY, &context)?;
+    let category_page = tera.render(templates::CATEGORY, context)?;
 
     context.remove(values::CATEGORY);
     context.remove(values::POSTS_IN_CATEGORY);
