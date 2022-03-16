@@ -9,6 +9,7 @@
 - Static content directory (`static`) is copied to `out/static`
 - Serve generated site (`--serve`, only for development purposes)
 - Watch files and regenerate on changes (`--watch`)
+- Automatically extracted preview texts for posts (the first paragraph)
 
 ## Variables
 
