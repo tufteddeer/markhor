@@ -18,7 +18,7 @@ use std::{
     io,
 };
 
-use crate::templating::{render_category_page, render_markdown_into_template};
+use crate::templating::{render_category_page, render_post_into_template};
 
 pub mod markdown;
 pub mod serve;
@@ -127,14 +127,7 @@ where
 
         for post in posts {
             let meta = &post.meta;
-            let content = &post.content;
-            let result_html = render_markdown_into_template(
-                &mut tera,
-                &mut context,
-                &meta.header,
-                content,
-                &post.headings,
-            )?;
+            let result_html = render_post_into_template(&mut tera, &mut context, post)?;
 
             write_output(&output_dir, &meta.rendered_to, result_html)?;
         }
