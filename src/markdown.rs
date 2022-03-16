@@ -13,15 +13,23 @@ use std::path::{Path, PathBuf};
 
 pub const MARKDOWN_HEADER_DELIMITER: &str = "---\n";
 
+pub struct ConvertedMarkdown {
+    pub content: String,
+    pub headings: Vec<TocHeading>,
+    pub preview_text: String,
+}
+
 /// Convert markdown to html
-///
+/// Extracts the first paragraph as preview text.
 /// # Examples
 /// ```
 /// use yanos::markdown::convert_markdown;
 ///
 /// let md = r"# Heading
 /// ### second";
-/// let (html, headings) = convert_markdown(md);
+/// let converted = convert_markdown(md);
+/// let headings = converted.headings;
+/// let html = converted.content;
 ///
 /// assert_eq!(html, "<h1>Heading</h1>\n<h2>second</h2>\n");
 /// assert_eq!(headings.len(), 2);
@@ -33,7 +41,7 @@ pub const MARKDOWN_HEADER_DELIMITER: &str = "---\n";
 /// assert_eq!(headings[1].prev_level, Some(1));
 /// assert_eq!(headings[1].text, "second");
 /// ```
-pub fn convert_markdown(markdown: &str) -> (String, Vec<TocHeading>) {
+pub fn convert_markdown(markdown: &str) -> ConvertedMarkdown {
     let parser = Parser::new(markdown);
 
     let mut in_heading = false;
@@ -42,6 +50,18 @@ pub fn convert_markdown(markdown: &str) -> (String, Vec<TocHeading>) {
     // string to collect all the text inside a heading (if there are nested tags inside the h tags)
     // will keep the text, but loose the tags
     let mut current_heading = String::new();
+
+    #[derive(PartialEq, Eq)]
+    enum PreviewReadingState {
+        Searching,
+        Reading,
+        Complete,
+    }
+
+    let mut preview_reading_state = PreviewReadingState::Searching;
+
+    let mut first_paragraph = String::new();
+
     let iterator = parser.map(|event| {
         match &event {
             Start(Tag::Heading(_, _, _)) => {
@@ -69,9 +89,22 @@ pub fn convert_markdown(markdown: &str) -> (String, Vec<TocHeading>) {
                     headings.push(toc_entry);
                 }
             }
+            Start(Tag::Paragraph) => {
+                if preview_reading_state == PreviewReadingState::Searching {
+                    preview_reading_state = PreviewReadingState::Reading;
+                }
+            }
+            End(Tag::Paragraph) => {
+                if preview_reading_state == PreviewReadingState::Reading {
+                    preview_reading_state = PreviewReadingState::Complete;
+                }
+            }
             Text(text) => {
                 if in_heading {
                     current_heading.push_str(text);
+                }
+                if preview_reading_state == PreviewReadingState::Reading {
+                    first_paragraph.push_str(text);
                 }
             }
             _ => {}
@@ -83,7 +116,11 @@ pub fn convert_markdown(markdown: &str) -> (String, Vec<TocHeading>) {
     let mut html_out = String::new();
     html::push_html(&mut html_out, iterator);
 
-    (html_out, headings)
+    ConvertedMarkdown {
+        content: html_out,
+        headings,
+        preview_text: first_paragraph,
+    }
 }
 
 /// Parse an optional [PostHeader] located at the start of a markdown document
@@ -174,18 +211,19 @@ pub fn convert_posts(
 
         out_path.push(out_name);
 
-        let (markdown_html, headings) = convert_markdown(markdown);
+        let converted_md = convert_markdown(markdown);
 
         let meta = PostMeta {
             source_file: name.into_string().unwrap(),
             rendered_to: out_path.to_string_lossy().to_string(),
             header,
+            preview_text: converted_md.preview_text,
         };
 
         let post = Post {
             meta,
-            content: markdown_html,
-            headings,
+            content: converted_md.content,
+            headings: converted_md.headings,
         };
 
         match posts.get_mut(&category) {

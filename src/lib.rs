@@ -90,6 +90,8 @@ pub struct PostMeta {
     pub rendered_to: String,
     /// an optional [PostHeader] contained within the source file
     pub header: Option<PostHeader>,
+    /// preview text for this post
+    pub preview_text: String,
 }
 
 pub fn generate_site<P>(
