@@ -11,7 +11,7 @@ pub fn watch_directories<F, P>(
 ) -> notify::Result<()>
 where
     P: AsRef<Path>,
-    F: FnOnce(notify::DebouncedEvent) -> () + Copy,
+    F: FnOnce(notify::DebouncedEvent) + Copy,
 {
     let (tx, rx) = channel();
 
