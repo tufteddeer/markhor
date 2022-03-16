@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use log::{error, info};
 use tera::{Context, Tera, Value};
 
-use crate::{Post, PostHeader, TocHeading};
+use crate::{Post, TocHeading};
 
 pub mod templates {
     pub const INDEX: &str = "index.html";
@@ -111,18 +111,16 @@ pub fn error_make_toc_fn_unavailable(_args: &HashMap<String, Value>) -> tera::Re
     Err(tera::Error::msg(msg))
 }
 
-pub fn render_markdown_into_template(
+pub fn render_post_into_template(
     tera: &mut Tera,
     context: &mut Context,
-    header: &Option<PostHeader>,
-    markdown: &str,
-    headings: &[TocHeading],
+    post: &Post,
 ) -> Result<String, tera::Error> {
-    context.insert(values::POST_CONTENT, &markdown);
-    context.insert(values::HEADER, &header);
+    context.insert(values::POST_CONTENT, &post.content);
+    context.insert(values::HEADER, &post.meta.header);
 
     let toc_builder = TocBuilder {
-        headings: headings.to_vec(),
+        headings: post.headings.to_vec(),
     };
     tera.register_function(functions::MAKE_TOC, toc_builder);
 
