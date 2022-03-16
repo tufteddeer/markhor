@@ -66,4 +66,4 @@ will produce the following html:
 </ul>
 ```
 
-
+The first heading can be excluded from the table of contents using the optional `skip_first=true` argument.
