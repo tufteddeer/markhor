@@ -58,10 +58,18 @@ impl tera::Function for TocBuilder {
         let open_list_item = &args["open_list_item"].as_str().unwrap_or("");
         let close_list_item = &args["close_list_item"].as_str().unwrap_or("");
 
+        let mut skip_first = args.get("skip_first").map_or(false, |value| {
+            value.as_bool().expect("failed to pass skip_first to bool")
+        });
+
         let mut html = String::new();
 
         let mut open = 0;
         for heading in &self.headings {
+            if skip_first {
+                skip_first = false;
+                continue;
+            }
             if heading.level > heading.prev_level.unwrap_or(0) {
                 html.push_str(open_list);
                 open += 1;
@@ -150,16 +158,14 @@ mod tests {
     use super::TocBuilder;
     use crate::TocHeading;
     use std::collections::HashMap;
-    use tera::Function;
+    use tera::{Function, Value};
 
-    #[test]
-    fn test_toc_builder() {
+    fn test_headings() -> Vec<TocHeading> {
         // 1 (h1)
         // -1.1 (h2)
         // -1.1.1 (h3)
         // -1.2 (h2)
-
-        let headings = vec![
+        vec![
             TocHeading {
                 level: 1,
                 prev_level: None,
@@ -180,11 +186,12 @@ mod tests {
                 prev_level: Some(3),
                 text: "1.2".to_string(),
             },
-        ];
+        ]
+    }
 
-        let toc_builder = TocBuilder { headings };
-
+    fn default_args() -> HashMap<String, Value> {
         let mut args = HashMap::new();
+
         args.insert(
             "open_list".to_string(),
             tera::Value::String("<ul>".to_string()),
@@ -202,6 +209,17 @@ mod tests {
             tera::Value::String("</li>".to_string()),
         );
 
+        args
+    }
+
+    #[test]
+    fn test_toc_builder() {
+        let toc_builder = TocBuilder {
+            headings: test_headings(),
+        };
+
+        let args = default_args();
+
         let html = toc_builder.call(&args).expect("failed to call toc builder");
 
         let html: String = tera::from_value(html).unwrap();
@@ -217,6 +235,35 @@ mod tests {
             <li>1.2</li>
             </ul>
         </ul>"
+            .to_string();
+
+        remove_whitespace(&mut expected);
+        assert_eq!(html, expected);
+    }
+
+    #[test]
+    fn test_toc_builder_skip_first() {
+        let toc_builder = TocBuilder {
+            headings: test_headings(),
+        };
+
+        let mut args = default_args();
+
+        args.insert("skip_first".to_string(), Value::from(true));
+
+        let html = toc_builder.call(&args).expect("failed to call toc builder");
+
+        let html: String = tera::from_value(html).unwrap();
+
+        // first heading an outer ul is skipped
+        let mut expected = r"
+            <ul>
+            <li>1.1</li>
+                <ul>
+                    <li>1.1.1</li>
+                </ul>
+            <li>1.2</li>
+            </ul>"
             .to_string();
 
         remove_whitespace(&mut expected);
