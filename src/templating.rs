@@ -26,6 +26,11 @@ pub mod values {
     pub const POSTS_META: &str = "posts_meta";
 }
 
+pub mod functions {
+    /// tera function name for [`crate::templating::TocBuilder`]
+    pub const MAKE_TOC: &str = "make_toc";
+}
+
 pub fn init_tera(template_dir: &str) -> Tera {
     info!("Creating Tera");
     let mut tera = match Tera::new(template_dir) {
@@ -87,6 +92,17 @@ impl tera::Function for TocBuilder {
     }
 }
 
+/// replaces [`TocBuilder`] outside of post templates to prevent post headings leaking into other templates
+/// if [`functions::MAKE_TOC`] is called
+pub fn error_make_toc_fn_unavailable(_args: &HashMap<String, Value>) -> tera::Result<Value> {
+    let msg = format!(
+        "Looks like you are using {} outside of the post template, this is not supported",
+        functions::MAKE_TOC
+    );
+    log::error!("{}", msg);
+    Err(tera::Error::msg(msg))
+}
+
 pub fn render_markdown_into_template(
     tera: &mut Tera,
     context: &mut Context,
@@ -100,9 +116,12 @@ pub fn render_markdown_into_template(
     let toc_builder = TocBuilder {
         headings: headings.to_vec(),
     };
-    tera.register_function("make_toc", toc_builder);
+    tera.register_function(functions::MAKE_TOC, toc_builder);
 
-    tera.render(templates::POST, context)
+    let result = tera.render(templates::POST, context);
+    tera.register_function(functions::MAKE_TOC, error_make_toc_fn_unavailable);
+
+    result
 }
 
 pub fn render_index(tera: &Tera, context: &mut Context) -> Result<String, tera::Error> {
