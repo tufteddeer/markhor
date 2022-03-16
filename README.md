@@ -1,4 +1,4 @@
-# Yanos (**y**et **ano**ther  **s**tatic site generator)
+# Yanos (**y**et **ano**ther **s**tatic site generator)
 
 ## Features
 
@@ -12,8 +12,58 @@
 
 ## Variables
 
-| **Variable**       | **Template**            |
-|------------------- |------------------------ |
-| posts_in_category  | category                |
-| post_categories    | post, category, index   |
-| category           | category          |
+| **Variable**      | **Template**          |
+| ----------------- | --------------------- |
+| posts_in_category | category              |
+| post_categories   | post, category, index |
+| category          | category              |
+
+## Functions
+
+| **Variable** | **Template** |
+| ------------ | ------------ |
+| make_toc     | post         |
+
+
+### make_toc
+`make_toc` can be used to create a table of contents inside the _post_ template. Headings are automatically extracted from markdown during conversion.
+
+Begin and end html code for items and lists can be configured via function arguments.
+
+```markdown
+
+# Heading 1
+
+## Heading 1.1
+### Heading 1.1.2
+
+## Heading 1.2
+
+```
+
+A Post containing the above markdown headings that envokes `make_toc` like this:
+```html
+{{ make_toc(
+    open_list = "<ul>",
+    close_list = "</ul>",
+    open_list_item = "<li>",
+    close_list_item = "</li>",
+ ) }}
+```
+will produce the following html:
+
+```html
+
+<ul>
+    <li>Heading 1</li>
+    <ul>
+        <li>Heading 1.1</li>
+    <ul>
+        <li>Heading 1.1.2</li>
+    </ul>
+        <li>Heading 1.2</li>
+    </ul>
+</ul>
+```
+
+The first heading can be excluded from the table of contents using the optional `skip_first=true` argument.
