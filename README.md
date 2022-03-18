@@ -25,7 +25,7 @@
 
 ## Functions
 
-| **Variable** | **Template** |
+| **Function** | **Template** |
 | ------------ | ------------ |
 | make_toc     | post         |
 
