@@ -1,5 +1,9 @@
 # Yanos (**y**et **ano**ther **s**tatic site generator)
 
+[![Clippy check](https://github.com/tufteddeer/yanos/actions/workflows/clippy.yml/badge.svg)](https://github.com/tufteddeer/yanos/actions/workflows/clippy.yml)
+[![Tests](https://github.com/tufteddeer/yanos/actions/workflows/test.yml/badge.svg)](https://github.com/tufteddeer/yanos/actions/workflows/test.yml)
+[![Docker build](https://github.com/tufteddeer/yanos/actions/workflows/docker.yaml/badge.svg)](https://github.com/tufteddeer/yanos/actions/workflows/docker.yaml)
+
 ## Features
 
 - Markdown files in `posts` are rendered into the `post.html` template (using [pulldown-cmark](https://crates.io/crates/pulldown-cmark))
