@@ -89,6 +89,10 @@ The `--watch` flag will automatically rebuild your site when files in `posts`, `
 
 Both flags work independent from another.
 
+### Docker
+
+A docker image is built automatically from new tags. and available as `ghcr.io/tufteddeer/markhor:latest`
+
 ### Building a site using GitHub actions
 
 A GitHub action is available at [markhor-action](https://github.com/tufteddeer/markhor-action)
