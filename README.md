@@ -91,7 +91,7 @@ Both flags work independent from another.
 
 ### Docker
 
-A docker image is built automatically from new tags. and available as `ghcr.io/tufteddeer/markhor:latest`
+A docker image is built automatically from new tags and available as `ghcr.io/tufteddeer/markhor:latest`.
 
 ### Building a site using GitHub actions
 
