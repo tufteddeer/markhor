@@ -23,7 +23,7 @@ pub struct ConvertedMarkdown {
 /// Extracts the first paragraph as preview text.
 /// # Examples
 /// ```
-/// use yanos::markdown::convert_markdown;
+/// use markhor::markdown::convert_markdown;
 ///
 /// let md = r"# Heading
 /// ### second";
@@ -129,7 +129,7 @@ pub fn convert_markdown(markdown: &str) -> ConvertedMarkdown {
 /// # Examples
 ///
 /// ```
-/// use yanos::markdown::split_md_and_header;
+/// use markhor::markdown::split_md_and_header;
 /// use std::str::FromStr;
 /// use toml::value::Datetime;
 /// let input = r#"---

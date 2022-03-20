@@ -1,8 +1,8 @@
-# Yanos (**y**et **ano**ther **s**tatic site generator)
+# Markhor
 
-[![Clippy check](https://github.com/tufteddeer/yanos/actions/workflows/clippy.yml/badge.svg)](https://github.com/tufteddeer/yanos/actions/workflows/clippy.yml)
-[![Tests](https://github.com/tufteddeer/yanos/actions/workflows/test.yml/badge.svg)](https://github.com/tufteddeer/yanos/actions/workflows/test.yml)
-[![Docker build](https://github.com/tufteddeer/yanos/actions/workflows/docker.yaml/badge.svg)](https://github.com/tufteddeer/yanos/actions/workflows/docker.yaml)
+[![Clippy check](https://github.com/tufteddeer/markhor/actions/workflows/clippy.yml/badge.svg)](https://github.com/tufteddeer/markhor/actions/workflows/clippy.yml)
+[![Tests](https://github.com/tufteddeer/markhor/actions/workflows/test.yml/badge.svg)](https://github.com/tufteddeer/markhor/actions/workflows/test.yml)
+[![Docker build](https://github.com/tufteddeer/markhor/actions/workflows/docker.yaml/badge.svg)](https://github.com/tufteddeer/markhor/actions/workflows/docker.yaml)
 
 ## Features
 

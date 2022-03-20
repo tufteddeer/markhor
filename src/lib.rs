@@ -52,9 +52,9 @@ pub struct TocHeading {
 /// # Examples
 ///
 /// ```
-/// use yanos::PostHeader;
+/// use markhor::PostHeader;
 /// use std::cmp::Ordering::{self, Equal, Less, Greater};
-/// use yanos::compare_header_date;
+/// use markhor::compare_header_date;
 ///
 /// let a = PostHeader {title: None, date: Some("1900-01-01".to_string()), category: None};
 /// let b = PostHeader {title: None, date: Some("2022-01-01".to_string()), category: None};
@@ -235,7 +235,7 @@ where
 /// use core::cmp::Ordering::Less;
 /// use std::cmp::Ordering::Greater;
 /// use std::cmp::Ordering::Equal;
-/// use yanos::compare_option;
+/// use markhor::compare_option;
 ///
 /// let some_high = Some(100);
 /// let some_low = Some(1);

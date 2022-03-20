@@ -481,6 +481,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3e2e65a1a2e43cfcb47a895c4c8b10d1f4a61097f9f254f183aee60cad9c651d"
 
 [[package]]
+name = "markhor"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "clap",
+ "fs_extra",
+ "log",
+ "notify",
+ "percent-encoding",
+ "pulldown-cmark",
+ "rayon",
+ "serde",
+ "simple_logger",
+ "tera",
+ "toml",
+]
+
+[[package]]
 name = "memchr"
 version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1238,22 +1256,4 @@ checksum = "d59cefebd0c892fa2dd6de581e937301d8552cb44489cdff035c6187cb63fa5e"
 dependencies = [
  "winapi 0.2.8",
  "winapi-build",
-]
-
-[[package]]
-name = "yanos"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "clap",
- "fs_extra",
- "log",
- "notify",
- "percent-encoding",
- "pulldown-cmark",
- "rayon",
- "serde",
- "simple_logger",
- "tera",
- "toml",
 ]

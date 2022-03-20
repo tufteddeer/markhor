@@ -5,8 +5,8 @@ use clap::Parser;
 use log::info;
 use simple_logger::SimpleLogger;
 
-use yanos::watch::watch_directories;
-use yanos::{copy_static_files, generate_site};
+use markhor::watch::watch_directories;
+use markhor::{copy_static_files, generate_site};
 
 const POSTS_DIR: &str = "posts";
 const OUT_DIR: &str = "out";
@@ -41,7 +41,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let serve_handle = if args.serve {
         Some(thread::spawn(move || {
-            yanos::serve::serve_files("127.0.0.1:8080", output_dir)
+            markhor::serve::serve_files("127.0.0.1:8080", output_dir)
                 .expect("Failed to start fileserver");
         }))
     } else {
