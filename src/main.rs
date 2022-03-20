@@ -23,6 +23,9 @@ struct Args {
     /// Watch source directories for changes and rebuild
     #[clap(long)]
     watch: bool,
+    /// Build drafts
+    #[clap(long)]
+    drafts: bool,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -35,7 +38,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let posts_dir = Path::new(POSTS_DIR);
     let output_dir = Path::new(OUT_DIR);
 
-    generate_site(TEMPLATES_GLOB, posts_dir, output_dir)?;
+    generate_site(TEMPLATES_GLOB, posts_dir, output_dir, args.drafts)?;
 
     copy_static_files(STATIC_DIR, OUT_DIR)?;
 
@@ -51,9 +54,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let watch_handle = if args.watch {
         info!("Watching files for changes...");
 
-        let change_listener = |_| {
+        let change_listener = move |_| {
             log::info!("Change detected, regenerating...");
-            if let Err(error) = generate_site(TEMPLATES_GLOB, POSTS_DIR, OUT_DIR) {
+            if let Err(error) = generate_site(TEMPLATES_GLOB, POSTS_DIR, OUT_DIR, args.drafts) {
                 log::error!("Failed generating site: {}", error);
             }
 

@@ -31,6 +31,7 @@ pub struct PostHeader {
     pub title: Option<String>,
     pub date: Option<String>,
     pub category: Option<String>,
+    pub draft: Option<bool>,
 }
 
 #[derive(Serialize)]
@@ -56,11 +57,11 @@ pub struct TocHeading {
 /// use std::cmp::Ordering::{self, Equal, Less, Greater};
 /// use markhor::compare_header_date;
 ///
-/// let a = PostHeader {title: None, date: Some("1900-01-01".to_string()), category: None};
-/// let b = PostHeader {title: None, date: Some("2022-01-01".to_string()), category: None};
-/// let c = PostHeader {title: None, date: Some("3333-01-01".to_string()), category: None};
-/// let d = PostHeader {title: None, date: Some("1900-01-01".to_string()), category: None};
-/// let e = PostHeader {title: None, date: None, category: None};
+/// let a = PostHeader {title: None, date: Some("1900-01-01".to_string()), category: None, draft:  None};
+/// let b = PostHeader {title: None, date: Some("2022-01-01".to_string()), category: None, draft:  None};
+/// let c = PostHeader {title: None, date: Some("3333-01-01".to_string()), category: None, draft:  None};
+/// let d = PostHeader {title: None, date: Some("1900-01-01".to_string()), category: None, draft:  None};
+/// let e = PostHeader {title: None, date: None, category: None, draft: None};
 ///
 /// assert_eq!(compare_header_date(&a, &b), Less);
 /// assert_eq!(compare_header_date(&a, &c), Less);
@@ -98,6 +99,7 @@ pub fn generate_site<P>(
     templates_glob: &str,
     posts_dir: P,
     output_dir: P,
+    drafts: bool,
 ) -> Result<(), Box<dyn Error>>
 where
     P: AsRef<Path> + Copy,
@@ -106,7 +108,7 @@ where
 
     let mut tera = templating::init_tera(templates_glob);
 
-    let posts_by_cat = convert_posts(posts_dir)?;
+    let posts_by_cat = convert_posts(posts_dir, drafts)?;
 
     let mut sorted_meta: Vec<&PostMeta> = posts_by_cat
         .iter()

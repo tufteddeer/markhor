@@ -173,6 +173,7 @@ pub fn split_md_and_header(input: &str) -> Result<(Option<PostHeader>, &str), to
 /// Returns a [HashMap] of [Post]s, keyed by category
 pub fn convert_posts(
     posts_dir: impl AsRef<Path>,
+    render_drafts: bool,
 ) -> Result<BTreeMap<Option<String>, Vec<Post>>, Box<dyn Error>> {
     let posts_dir = posts_dir.as_ref();
 
@@ -196,42 +197,46 @@ pub fn convert_posts(
 
         let (header, markdown) = split_md_and_header(&source)?;
 
-        let mut category = None;
-        let mut out_path = if let Some(h) = &header {
-            if let Some(cat) = &h.category {
-                info!("Post {} has category {}", filepath.display(), cat);
-                category = Some(cat.to_string());
-                PathBuf::from(cat)
+        let is_draft = header.as_ref().map_or(false, |h| h.draft.unwrap_or(false));
+
+        if !is_draft || render_drafts {
+            let mut category = None;
+            let mut out_path = if let Some(h) = &header {
+                if let Some(cat) = &h.category {
+                    info!("Post {} has category {}", filepath.display(), cat);
+                    category = Some(cat.to_string());
+                    PathBuf::from(cat)
+                } else {
+                    PathBuf::new()
+                }
             } else {
                 PathBuf::new()
-            }
-        } else {
-            PathBuf::new()
-        };
+            };
 
-        out_path.push(out_name);
+            out_path.push(out_name);
 
-        let converted_md = convert_markdown(markdown);
+            let converted_md = convert_markdown(markdown);
 
-        let meta = PostMeta {
-            source_file: name.into_string().unwrap(),
-            rendered_to: out_path.to_string_lossy().to_string(),
-            header,
-            preview_text: converted_md.preview_text,
-        };
+            let meta = PostMeta {
+                source_file: name.into_string().unwrap(),
+                rendered_to: out_path.to_string_lossy().to_string(),
+                header,
+                preview_text: converted_md.preview_text,
+            };
 
-        let post = Post {
-            meta,
-            content: converted_md.content,
-            headings: converted_md.headings,
-        };
+            let post = Post {
+                meta,
+                content: converted_md.content,
+                headings: converted_md.headings,
+            };
 
-        match posts.get_mut(&category) {
-            Some(postvec) => {
-                postvec.push(post);
-            }
-            None => {
-                posts.insert(category, vec![post]);
+            match posts.get_mut(&category) {
+                Some(postvec) => {
+                    postvec.push(post);
+                }
+                None => {
+                    posts.insert(category, vec![post]);
+                }
             }
         }
     }
@@ -274,5 +279,35 @@ date = "2022-02-01"
         assert!(header.is_none());
 
         assert_eq!(content, "# heading")
+    }
+
+    #[test]
+    fn test_split_md_and_header_should_handle_draft() {
+        let input = r#"---
+draft = true
+---
+"#
+        .to_string();
+        let (header, _) = split_md_and_header(&input).unwrap();
+
+        assert_eq!(header.unwrap().draft.unwrap(), true);
+
+        let input = r#"---
+draft = false
+---
+"#
+        .to_string();
+        let (header, _) = split_md_and_header(&input).unwrap();
+
+        assert_eq!(header.unwrap().draft.unwrap(), false);
+
+        let input = r#"---
+title = "test"
+---
+"#
+        .to_string();
+        let (header, _) = split_md_and_header(&input).unwrap();
+
+        assert_eq!(header.unwrap().draft.is_none(), true);
     }
 }
