@@ -20,6 +20,8 @@
 
 The source directory is expected to look like this:
 
+[Example](https://github.com/tufteddeer/tufteddeer.github.io) (my github.io page)
+
 ```
 .
 ├── posts
