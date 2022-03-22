@@ -11,7 +11,7 @@ license = "MIT"
 tera = "1.15.0"
 pulldown-cmark = "0.9.1"
 simple_logger = "2.1.0"
-log = "0.4.14"
+log = "0.4.16"
 serde = { version = "1.0", features = ["derive"] }
 toml = "0.5"
 fs_extra = "1.2.0"
