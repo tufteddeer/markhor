@@ -133,7 +133,7 @@ where
             let meta = &post.meta;
             let result_html = render_post_into_template(&mut tera, &mut context, post)?;
 
-            write_output(&output_dir, &meta.rendered_to, result_html)?;
+            write_output(output_dir, &meta.rendered_to, result_html)?;
         }
 
         context.remove(values::POST_CONTENT);
