@@ -48,7 +48,12 @@ where
 {
     let mut buffer = [0; 1024];
 
-    let _ = stream.read(&mut buffer).unwrap();
+    let num_bytes = stream.read(&mut buffer)?;
+
+    if num_bytes == 0 {
+        println!("leaving");
+        return Ok(());
+    }
 
     let request = String::from_utf8_lossy(&buffer[..]);
 

@@ -290,7 +290,7 @@ draft = true
         .to_string();
         let (header, _) = split_md_and_header(&input).unwrap();
 
-        assert_eq!(header.unwrap().draft.unwrap(), true);
+        assert!(header.unwrap().draft.unwrap());
 
         let input = r#"---
 draft = false
@@ -299,7 +299,7 @@ draft = false
         .to_string();
         let (header, _) = split_md_and_header(&input).unwrap();
 
-        assert_eq!(header.unwrap().draft.unwrap(), false);
+        assert!(!header.unwrap().draft.unwrap());
 
         let input = r#"---
 title = "test"
@@ -308,6 +308,6 @@ title = "test"
         .to_string();
         let (header, _) = split_md_and_header(&input).unwrap();
 
-        assert_eq!(header.unwrap().draft.is_none(), true);
+        assert!(header.unwrap().draft.is_none());
     }
 }
